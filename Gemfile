@@ -5,11 +5,13 @@ group :development do
   gem 'rspec', '~> 2.4'
   gem 'rdoc'
 
-  gem 'activerecord',   github: 'rails/rails', branch: '4-2-stable'
-  gem 'activemodel',    github: 'rails/rails', branch: '4-2-stable'
-  gem 'activesupport',  github: 'rails/rails', branch: '4-2-stable'
-  gem 'actionpack',     github: 'rails/rails', branch: '4-2-stable'
-  gem 'railties',       github: 'rails/rails', branch: '4-2-stable'
+  git 'https://github.com/rails/rails', branch: '4-2-stable' do
+    gem 'activerecord'
+    gem 'activemodel'
+    gem 'activesupport'
+    gem 'actionpack'
+    gem 'railties'
+  end
 
   gem 'arel',           github: 'rails/arel', branch: '6-0-stable'
   gem 'journey',        github: 'rails/journey'
