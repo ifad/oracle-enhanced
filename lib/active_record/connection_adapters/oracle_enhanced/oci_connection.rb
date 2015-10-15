@@ -314,6 +314,8 @@ module ActiveRecord
         async = config[:allow_concurrency]
         prefetch_rows = config[:prefetch_rows] || 100
         cursor_sharing = config[:cursor_sharing] || 'force'
+        recv_timeout = config[:recv_timeout] || 60
+        send_timeout = config[:send_timeout] || 60
         # get session time_zone from configuration or from TZ environment variable
         time_zone = config[:time_zone] || ENV['TZ']
 
@@ -334,6 +336,36 @@ module ActiveRecord
         conn.autocommit = true
         conn.non_blocking = true if async
         conn.prefetch_rows = prefetch_rows
+
+        begin
+          # Set undocumented OCI8 OCI_ATTR_RECEIVE_TIMEOUT and OCI_ATTR_SEND_TIMEOUT
+          # (http://web.mit.edu/quentin/oracle/instantclient_11_1/sdk/include/oci.h)
+          # through these ruby-oci8 setters. Inside the OCI8 library, these attr_set
+          # translate to a setsockopt(s, SO_RCVTIMEO, (struct timeval*){N,0}), where
+          # N is the value (in seconds) passed to the setter.
+          #
+          #   https://github.com/kubo/ruby-oci8/blob/e8240f/lib/oci8/oci8.rb#L398
+          #
+          # This setting makes read() return the amount of bytes transferred up the
+          # moment the timeout occurred, or -1 if no data has been received.  errno
+          # is set to EAGAIN, at least on Linux.
+          #
+          # This condition is detected by Oracle's library, that returns ORA-12609:
+          # TNS: Receive timeout occurred to the caller, translated up the chain as
+          # an ActiveRecord::StatementInvalid.
+          #
+          conn.recv_timeout = recv_timeout
+          conn.send_timeout = send_timeout
+
+        rescue NotImplementedError
+          # If the user is setting them explicitly, raise
+          #
+          if config.key?(:recv_timeout) || config.key?(:send_timeout)
+            raise OracleEnhancedConnectionException,
+              "Receive/Send timeouts are not supported on your ORACLE version."
+          end
+        end
+
         conn.exec "alter session set cursor_sharing = #{cursor_sharing}" rescue nil
         conn.exec "alter session set time_zone = '#{time_zone}'" unless time_zone.blank?
         conn.exec "alter session set current_schema = #{schema}" unless schema.blank?
