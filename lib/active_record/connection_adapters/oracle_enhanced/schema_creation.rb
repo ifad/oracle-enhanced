@@ -19,21 +19,27 @@ module ActiveRecord
         end
 
         def visit_TableDefinition(o)
-          create_sql = "CREATE#{' GLOBAL TEMPORARY' if o.temporary} TABLE "
-          create_sql << "#{quote_table_name(o.name)} ("
-          create_sql << o.columns.map { |c| accept c }.join(', ')
-          create_sql << ")"
+          create_sql = "CREATE#{' GLOBAL TEMPORARY' if o.temporary} TABLE #{quote_table_name(o.name)} "
+          statements = o.columns.map { |c| accept c }
+          statements << accept(o.primary_keys) if o.primary_keys
+
+          if supports_foreign_keys?
+            statements.concat(o.foreign_keys.map { |to_table, options| foreign_key_in_create(o.name, to_table, options) })
+          end
+
+          create_sql << "(#{statements.join(', ')})" if statements.present?
 
           unless o.temporary
             @lob_tablespaces.each do |lob_column, tablespace|
               create_sql << " LOB (#{quote_column_name(lob_column)}) STORE AS (TABLESPACE #{tablespace}) \n"
             end if defined?(@lob_tablespaces)
-            create_sql << " ORGANIZATION #{o.options[:organization]}" if o.options[:organization]
-            if (tablespace = o.options[:tablespace] || default_tablespace_for(:table))
+            create_sql << " ORGANIZATION #{o.organization}" if o.organization
+            if (tablespace = o.tablespace || default_tablespace_for(:table))
               create_sql << " TABLESPACE #{tablespace}"
             end
           end
-          create_sql << " #{o.options[:options]}"
+          add_table_options!(create_sql, table_options(o))
+          create_sql << " AS #{@conn.to_sql(o.as)}" if o.as
           create_sql
         end
 
@@ -50,7 +56,7 @@ module ActiveRecord
             if type == :text
               sql << " DEFAULT #{@conn.quote(options[:default])}"
             else
-              sql << " DEFAULT #{quote_value(options[:default], options[:column])}"
+              sql << " DEFAULT #{quote_default_expression(options[:default], options[:column])}"
             end
           end
           # must explicitly add NULL or NOT NULL to allow change_column to work on migrations
@@ -62,6 +68,9 @@ module ActiveRecord
           # add AS expression for virtual columns
           if options[:as].present?
             sql << " AS (#{options[:as]})"
+          end
+          if options[:primary_key] == true
+            sql << " PRIMARY KEY"
           end
         end
 

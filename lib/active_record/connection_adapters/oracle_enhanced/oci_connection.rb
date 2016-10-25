@@ -10,7 +10,7 @@ rescue LoadError => e
 end
 
 # check ruby-oci8 version
-required_oci8_version = [2, 0, 3]
+required_oci8_version = [2, 2, 0]
 oci8_version_ints = OCI8::VERSION.scan(/\d+/).map{|s| s.to_i}
 if (oci8_version_ints <=> required_oci8_version) < 0
   raise LoadError, "ERROR: ruby-oci8 version #{OCI8::VERSION} is too old. Please install ruby-oci8 version #{required_oci8_version.join('.')} or later."
@@ -25,7 +25,9 @@ module ActiveRecord
       def initialize(config)
         @raw_connection = OCI8EnhancedAutoRecover.new(config, OracleEnhancedOCIFactory)
         # default schema owner
-        @owner = config[:username].to_s.upcase
+        @owner = config[:schema]
+        @owner ||= config[:username]
+        @owner = @owner.to_s.upcase
       end
 
       def raw_oci_connection
@@ -135,28 +137,39 @@ module ActiveRecord
         end
         private :allocate_cursor
 
-        def bind_param(position, value, column = nil)
-          if column && column.object_type?
-            if @connection.raw_connection.respond_to? :get_tdo_by_typename
-              @raw_cursor.bind_param(position, value, :named_type, column.sql_type)
+        def bind_params( *bind_vars )
+          index = 1
+          bind_vars.flatten.each do |var|
+            if Hash === var
+              var.each { |key, val| bind_param key, val }
             else
-              raise "Use ruby-oci8 2.1.6 or later to bind Oracle objects."
+              bind_param index, var
+              index += 1
             end
-          elsif value.nil?
-            @raw_cursor.bind_param(position, nil, String)
+          end
+        end
+
+        def bind_param(position, value, column = nil)
+          if column
+            ActiveSupport::Deprecation.warn(<<-MSG.squish)
+              *******************************************************
+              Passing a column to `bind_param` will be deprecated.
+              `type_casted_binds` should be already type casted
+              so that `bind_param` should not need to know column.
+              *******************************************************
+            MSG
+          end
+
+          if column && column.object_type?
+            @raw_cursor.bind_param(position, value, :named_type, column.sql_type)
           else
-            case col_type = column && column.type
-            when :text, :binary
-              # ruby-oci8 cannot create CLOB/BLOB from ''
-              lob_value = value == '' ? ' ' : value
-              bind_type = col_type == :text ? OCI8::CLOB : OCI8::BLOB
-              ora_value = bind_type.new(@connection.raw_oci_connection, lob_value)
-              ora_value.size = 0 if value == ''
-              @raw_cursor.bind_param(position, ora_value)
-            when :raw
-              @raw_cursor.bind_param(position, OracleEnhancedAdapter.encode_raw(value))
-            when :decimal
+            case value
+            when ActiveRecord::OracleEnhanced::Type::Raw
+              @raw_cursor.bind_param(position, ActiveRecord::ConnectionAdapters::OracleEnhanced::Quoting.encode_raw(value))
+            when ActiveModel::Type::Decimal
               @raw_cursor.bind_param(position, BigDecimal.new(value.to_s))
+            when NilClass
+              @raw_cursor.bind_param(position, nil, String)
             else
               @raw_cursor.bind_param(position, value)
             end
@@ -230,7 +243,7 @@ module ActiveRecord
       def describe(name)
         # fall back to SELECT based describe if using database link
         return super if name.to_s.include?('@')
-        quoted_name = OracleEnhancedAdapter.valid_table_name?(name) ? name : "\"#{name}\""
+        quoted_name = ActiveRecord::ConnectionAdapters::OracleEnhanced::Quoting.valid_table_name?(name) ? name : "\"#{name}\""
         @raw_connection.describe(quoted_name)
       rescue OCIException => e
         if e.code == 4043
@@ -283,6 +296,10 @@ module ActiveRecord
         end
       end
 
+      def database_version
+        @database_version ||= (version = raw_connection.oracle_server_version) && [version.major, version.minor]
+      end
+
       private
 
       def date_without_time?(value)
@@ -322,6 +339,7 @@ module ActiveRecord
         username = config[:username] && config[:username].to_s
         password = config[:password] && config[:password].to_s
         database = config[:database] && config[:database].to_s
+        schema = config[:schema] && config[:schema].to_s
         host, port = config[:host], config[:port]
         privilege = config[:privilege] && config[:privilege].to_sym
         async = config[:allow_concurrency]
@@ -380,7 +398,12 @@ module ActiveRecord
         end
 
         conn.exec "alter session set cursor_sharing = #{cursor_sharing}" rescue nil
-        conn.exec "alter session set time_zone = '#{time_zone}'" unless time_zone.blank?
+        if ActiveRecord::Base.default_timezone == :local
+          conn.exec "alter session set time_zone = '#{time_zone}'" unless time_zone.blank?
+        elsif ActiveRecord::Base.default_timezone == :utc
+          conn.exec "alter session set time_zone = '+00:00'"
+        end
+        conn.exec "alter session set current_schema = #{schema}" unless schema.blank?
 
         # Initialize NLS parameters
         OracleEnhancedAdapter::DEFAULT_NLS_PARAMETERS.each do |key, default_value|

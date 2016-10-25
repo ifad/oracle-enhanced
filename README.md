@@ -6,10 +6,21 @@ Oracle enhanced adapter for ActiveRecord
 DESCRIPTION
 -----------
 
-Oracle enhanced ActiveRecord adapter provides Oracle database access from Ruby on Rails applications. Oracle enhanced adapter can be used from Ruby on Rails versions between 2.3.x and 4.0 and it is working with Oracle database versions from 10g to 12c.
+Oracle enhanced ActiveRecord adapter provides Oracle database access from Ruby on Rails applications. Oracle enhanced adapter can be used from Ruby on Rails versions between 2.3.x and 5.0 and it is working with Oracle database versions from 10g to 12c.
 
 INSTALLATION
 ------------
+### Rails 5.0
+
+Oracle enhanced adapter version 1.7 just supports Rails 5.0 and does not support Rails 4.2 or lower version of Rails.
+When using Ruby on Rails version 5.0 then in Gemfile include
+
+```ruby
+# Use oracle as the database for Active Record
+gem 'activerecord-oracle_enhanced-adapter', '~> 1.7.0'
+gem 'ruby-oci8' # only for CRuby users
+```
+
 ### Rails 4.2
 
 Oracle enhanced adapter version 1.6 just supports Rails 4.2 and does not support Rails 4.1 or lower version of Rails.
@@ -19,7 +30,7 @@ When using Ruby on Rails version 4.2 then in Gemfile include
 gem 'activerecord-oracle_enhanced-adapter', '~> 1.6.0'
 ```
 
-where instead of 1.6.0 you can specify any other desired version. It is recommended to specify version with `~>` which means that use specified version or later patch versions (in this example any later 1.5.x version but not 1.6.x version). Oracle enhanced adapter maintains API backwards compatibility during patch version upgrades and therefore it is safe to always upgrade to latest patch version.
+where instead of 1.6.0 you can specify any other desired version. It is recommended to specify version with `~>` which means that use specified version or later patch versions (in this example any later 1.6.x version but not 1.7.x version). Oracle enhanced adapter maintains API backwards compatibility during patch version upgrades and therefore it is safe to always upgrade to latest patch version.
 
 ### Rails 4.0 and 4.1
 
@@ -173,7 +184,10 @@ or you can even use Oracle specific TNS connection description:
 ```yml
 development:
   adapter: oracle_enhanced
-  database: "(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=localhost)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=xe)))"
+  database: "(DESCRIPTION=
+    (ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=localhost)(PORT=1521)))
+    (CONNECT_DATA=(SERVICE_NAME=xe))
+  )"
   username: user
   password: secret
 ```
@@ -244,6 +258,44 @@ class Employee < ActiveRecord::Base
   # specify sequence name
   self.sequence_name = "hr.hr_employee_s"
 
+  # set which DATE columns should be converted to Ruby Date using ActiveRecord Attribute API
+  # Starting from Oracle enhanced adapter 1.7 Oracle `DATE` columns are mapped to Ruby `Date` by default.
+  attribute :hired_on, :date
+  attribute :birth_date_on, :date
+
+  # set which DATE columns should be converted to Ruby Time using ActiveRecord Attribute API
+  attribute :last_login_time, :datetime
+
+  # set which VARCHAR2 columns should be converted to true and false using ActiveRecord Attribute API
+  attribute :manager, :boolean
+  attribute :active, :boolean
+
+  # set which columns should be ignored in ActiveRecord
+  ignore_table_columns :attribute1, :attribute2
+end
+```
+
+You can also access remote tables over database link using
+
+```ruby
+self.table_name "hr_employees@db_link"
+```
+
+Examples for Rails 4.x
+
+```ruby
+class Employee < ActiveRecord::Base
+  # specify schema and table name
+  self.table_name = "hr.hr_employees"
+
+  # specify primary key name
+  self.primary_key = "employee_id"
+
+  # specify sequence name
+  self.sequence_name = "hr.hr_employee_s"
+
+  # If you're using Rails 4.2 or earlier you can do this
+
   # set which DATE columns should be converted to Ruby Date
   set_date_columns :hired_on, :birth_date_on
 
@@ -256,12 +308,6 @@ class Employee < ActiveRecord::Base
   # set which columns should be ignored in ActiveRecord
   ignore_table_columns :attribute1, :attribute2
 end
-```
-
-You can also access remote tables over database link using
-
-```ruby
-self.table_name "hr_employees@db_link"
 ```
 
 Examples for Rails 3.2 and lower version of Rails
@@ -415,6 +461,14 @@ Post.contains(:all_text, "aaa within title")
 Post.contains(:all_text, "bbb within comment_author")
 ```
 
+Please note that `index_column` must be a real column in your database and it's value will be overriden every time your `index_column_trigger_on` columns are changed. So, _do not use columns with real data as `index_column`_.
+
+Index column can be created as:
+
+```ruby
+add_column :posts, :all_text, :string, limit: 2, comment: 'Service column for context search index'
+```
+
 ### Oracle virtual columns support
 
 Since version R11G1 Oracle database allows adding computed [Virtual Columns](http://www.oracle-base.com/articles/11g/virtual-columns-11gr1.php) to the table.
@@ -489,6 +543,106 @@ ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.default_tablespaces =
   {:clob => 'TS_LOB', :blob => 'TS_LOB', :index => 'TS_INDEX', :table => 'TS_DATA'}
 ```
 
+### Switching to another schema
+
+There are some requirements to connect to Oracle database first and switch to another user.
+Oracle enhanced adapter supports schema: option.
+
+Note: Oracle enhanced adapter does not take care if the database user specified in username: parameter
+has appropriate privilege to select, insert, update and delete database objects owned by the schema specified in schema: parameter.
+
+```yml
+development:
+  adapter: oracle_enhanced
+  database: xe
+  username: user
+  password: secret
+  schema: tableowner
+```
+
+### Timeouts
+
+By default, OCI libraries set a connect timeout of 60 seconds (as of v12.0), and do not set a data receive timeout.
+
+While this may desirable if you process queries that take several minutes to complete, it may also lead to resource exhaustion if
+connections are teared down improperly during a query, e.g. by misbehaving networking equipment that does not inform both peers of
+connection reset. In this scenario, the OCI libraries will wait indefinitely for data to arrive, thus blocking indefinitely the application
+that initiated the query.
+
+You can set a connect timeout, in seconds, using the following TNSNAMES parameters:
+
+  * `CONNECT_TIMEOUT`
+  * `TCP_CONNECT_TIMEOUT`
+
+Example setting a 5 seconds connect timeout:
+
+```yml
+development:
+  database: "(DESCRIPTION=
+    (ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=localhost)(PORT=1521)))
+    (CONNECT_TIMEOUT=5)(TCP_CONNECT_TIMEOUT=5)
+    (CONNECT_DATA=(SERVICE_NAME=xe))
+  )"
+```
+You should set a timeout value dependant on your network topology, and the time needed to establish a TCP connection with your ORACLE
+server. In real-world scenarios, a value larger than 5 should be avoided.
+
+You can set receive and send timeouts, in seconds, using the following TNSNAMES parameters:
+
+  * `RECV_TIMEOUT` - the maximum time the OCI libraries should wait for data to arrive on the TCP socket. Internally, it is implemented
+    through a `setsockopt(s, SOL_SOCKET, SO_RCVTIMEO)`. You should set this value to an integer larger than the server-side execution time
+    of your longest-running query.
+  * `SEND_TIMEOUT` the maximum time the OCI libraries should wait for write operations to complete on the TCP socket. Internally, it is
+    implemented through a `setsockopt(s, SOL_SOCKET, SO_SNDTIMEO)`. Values larger than 5 are a sign of poorly performing network, and as
+    such it should be avoided.
+
+Example setting a 60 seconds receive timeout and 5 seconds send timeout:
+
+```yml
+development:
+  database: "(DESCRIPTION=
+    (ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=localhost)(PORT=1521)))
+    (RECV_TIMEOUT=60)(SEND_TIMEOUT=5)
+    (CONNECT_DATA=(SERVICE_NAME=xe))
+  )"
+```
+
+Example setting the above send/recv timeout plus a 5 seconds connect timeout:
+
+```yml
+development:
+  database: "(DESCRIPTION=
+    (ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=localhost)(PORT=1521)))
+    (CONNECT_TIMEOUT=5)(TCP_CONNECT_TIMEOUT=5)
+    (RECV_TIMEOUT=60)(SEND_TIMEOUT=5)
+    (CONNECT_DATA=(SERVICE_NAME=xe))
+  )"
+```
+
+UPGRADE
+---------------
+### Upgrade Rails 4.2 or older version to Rails 5
+
+If your Oracle table columns have been created for Rails `:datetime` attributes in Rails 4.2 or earlier,
+they need to migrate to `:datetime` in Rails 5 using one of two following ways:
+
+* Rails migration code example:
+```ruby
+change_column :posts, :created_at, :datetime
+change_column :posts, :updated_at, :datetime
+```
+
+or
+
+* SQL statement example
+```sql
+ALTER TABLE "POSTS" MODIFY "CREATED_AT" TIMESTAMP
+ALTER TABLE "POSTS" MODIFY "UPDATED_AT" TIMESTAMP
+```
+
+In Rails 5 without running this migration or sql statement, 
+these attributes will be handled as Rails `:date` type.
+
 TROUBLESHOOTING
 ---------------
 
@@ -534,6 +688,14 @@ When Apache with Phusion Passenger (mod_passenger or previously mod_rails) is us
 
   * Create wrapper script as described in [Phusion blog](http://blog.phusion.nl/2008/12/16/passing-environment-variables-to-ruby-from-phusion-passenger) or [RayApps::Blog](http://blog.rayapps.com/2008/05/21/using-mod_rails-with-rails-applications-on-oracle)
   * Set environment variables in the file which is used by Apache before launching Apache worker processes - on Linux it typically is envvars file (look in apachectl or apache2ctl script where it is looking for envvars file) or /System/Library/LaunchDaemons/org.apache.httpd.plist on Mac OS X. See the following [discussion thread](http://groups.google.com/group/oracle-enhanced/browse_thread/thread/c5f64106569fadd0) for more hints.
+
+### What to do if my application is stuck?
+
+If you see established TCP connections that do not exchange data, and you are unable to terminate your application using a TERM or an INT
+signal, and you are forced to use the KILL signal, then the OCI libraries may be waiting indefinitely for a network read operation to
+complete.
+
+See the **Timeouts** section above.
 
 RUNNING TESTS
 -------------

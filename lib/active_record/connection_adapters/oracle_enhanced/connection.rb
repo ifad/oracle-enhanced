@@ -38,7 +38,7 @@ module ActiveRecord
           db_link = nil
           default_owner = @owner
         end
-        real_name = OracleEnhancedAdapter.valid_table_name?(name) ? name.upcase : name
+        real_name = ActiveRecord::ConnectionAdapters::OracleEnhanced::Quoting.valid_table_name?(name) ? name.upcase : name
         if real_name.include?('.')
           table_owner, table_name = real_name.split('.')
         else
@@ -99,6 +99,11 @@ module ActiveRecord
       end
 
     end
+
+    # Returns array with major and minor version of database (e.g. [12, 1])
+    def database_version
+      raise NoMethodError, "Not implemented for this raw driver"
+    end 
     
     class OracleEnhancedConnectionException < StandardError #:nodoc:
     end

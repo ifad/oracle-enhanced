@@ -4,11 +4,8 @@ module ActiveRecord
 
       attr_reader :table_name, :nchar, :virtual_column_data_default, :returning_id #:nodoc:
 
-      FALSE_VALUES << 'N'
-      TRUE_VALUES << 'Y'
+      def initialize(name, default, sql_type_metadata = nil, null = true, table_name = nil, virtual = false, returning_id = nil, comment = nil) #:nodoc:
 
-      def initialize(name, default, cast_type, sql_type = nil, null = true, table_name = nil, virtual=false, returning_id=false) #:nodoc:
-        @table_name = table_name
         @virtual = virtual
         @virtual_column_data_default = default.inspect if virtual
         @returning_id = returning_id
@@ -17,20 +14,13 @@ module ActiveRecord
         else
           default_value = self.class.extract_value_from_default(default)
         end
-        super(name, default_value, cast_type, sql_type, null)
+        super(name, default_value, sql_type_metadata, null, table_name, comment: comment)
         # Is column NCHAR or NVARCHAR2 (will need to use N'...' value quoting for these data types)?
         # Define only when needed as adapter "quote" method will check at first if instance variable is defined.
-        if sql_type 
-          @nchar = true if cast_type.class == ActiveRecord::Type::String && sql_type[0,1] == 'N'
-          @object_type = sql_type.include? '.'
+        if sql_type_metadata
+          @object_type = sql_type_metadata.sql_type.include? '.'
         end
         # TODO: Need to investigate when `sql_type` becomes nil
-      end
-
-      def type_cast(value) #:nodoc:
-        return OracleEnhancedColumn::string_to_raw(value) if type == :raw
-        return guess_date_or_time(value) if type == :datetime && OracleEnhancedAdapter.emulate_dates
-        super
       end
 
       def virtual?
@@ -73,16 +63,12 @@ module ActiveRecord
         super
       end
 
-      # convert RAW column values back to byte strings.
-      def self.string_to_raw(string) #:nodoc:
-        string
-      end
-
       # Get column comment from schema definition.
       # Will work only if using default ActiveRecord connection.
-      def comment
-        ActiveRecord::Base.connection.column_comment(@table_name, name)
-      end
+#      def comment
+#        #TODO: may be deprecated due to conflict with variable
+#        ActiveRecord::Base.connection.column_comment(@table_name, name)
+#      end
       
       private
 
@@ -105,6 +91,12 @@ module ActiveRecord
 
         def fallback_string_to_date(string) #:nodoc:
           if OracleEnhancedAdapter.string_to_date_format || OracleEnhancedAdapter.string_to_time_format
+            ActiveSupport::Deprecation.warn(<<-MSG.squish)
+              `fallback_string_to_date` has been deprecated.
+              It will be removed from next version of Oracle enhanced adapter.
+              Users are unlikely to see this message since this method has gone
+              from ActiveRecord::ConnectionAdapters::Column in Rails 4.2.
+            MSG
             return (string_to_date_or_time_using_format(string).to_date rescue super)
           end
           super
@@ -112,12 +104,25 @@ module ActiveRecord
 
         def fallback_string_to_time(string) #:nodoc:
           if OracleEnhancedAdapter.string_to_time_format || OracleEnhancedAdapter.string_to_date_format
+            ActiveSupport::Deprecation.warn(<<-MSG.squish)
+              `fallback_string_to_time` has been deprecated.
+              It will be removed from next version of Oracle enhanced adapter.
+              Users are unlikely to see this message since this method has gone
+              from ActiveRecord::ConnectionAdapters::Column in Rails 4.2.
+            MSG
             return (string_to_date_or_time_using_format(string).to_time rescue super)
           end
           super
         end
 
         def string_to_date_or_time_using_format(string) #:nodoc:
+          ActiveSupport::Deprecation.warn(<<-MSG.squish)
+            `string_to_date_or_time_using_format` has been deprecated.
+            It will be removed from next version of Oracle enhanced adapter.
+            Users are unlikely to see this message since `fallback_string_to_date`
+            and `fallback_string_to_time` have gone
+            from ActiveRecord::ConnectionAdapters::Column in Rails 4.2.
+          MSG
           if OracleEnhancedAdapter.string_to_time_format && dt=Date._strptime(string, OracleEnhancedAdapter.string_to_time_format)
             return Time.parse("#{dt[:year]}-#{dt[:mon]}-#{dt[:mday]} #{dt[:hour]}:#{dt[:min]}:#{dt[:sec]}#{dt[:zone]}")
           end

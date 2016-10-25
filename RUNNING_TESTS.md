@@ -13,10 +13,45 @@ If you are getting ORA-12520 errors when running tests then it means that Oracle
 
 to increase process limit and then restart the database (this will be necessary if Oracle XE will be used as default processes limit is 40).
 
+### Docker
+If no Oracle database with SYS and SYSTEM user access is available, try the docker approach.
+
+Install [Docker](https://docker.github.io/engine/installation/)
+
+Pull [docker-oracle-xe-11g](https://hub.docker.com/r/wnameless/oracle-xe-11g/) image from docker hub
+
+    docker pull wnameless/oracle-xe-11g
+
+Start a Oracle database docker container with mapped ports. Use port `49161` to access the database.
+
+    docker run -d -p 49160:22 -p 49161:1521 wnameless/oracle-xe-11g
+
+Check connection to the database with `sqlplus`. The user is `system`, the password is `oracle`.
+
+    sqlplus64 system/oracle@localhost:49161
+
+The oracle enhanced configuration file `spec/spec_config.yaml` should look like:
+
+```yaml
+# copy this file to spec/config.yaml and set appropriate values
+# you can also use environment variables, see spec_helper.rb
+database:
+  name:         'xe'
+  host:         'localhost'
+  port:         49161
+  user:         'oracle_enhanced'
+  password:     'oracle_enhanced'
+  sys_password: 'oracle'
+  non_default_tablespace: 'SYSTEM'
+  timezone: 'Europe/Riga'
+```
+
 Ruby versions
 -------------
 
-It is recommended to use [RVM](http://rvm.beginrescueend.com) to run tests with different Ruby implementations. oracle_enhanced is mainly tested with MRI 1.8.7 (all Rails versions) and 1.9.2 (Rails 3) and JRuby 1.6.
+oracle_enhanced is tested with MRI 2.1.x and 2.2.x, and JRuby 1.7.x and 9.0.x.x.  
+
+It is recommended to use [RVM](http://rvm.beginrescueend.com) to run tests with different Ruby implementations.
 
 Running tests
 -------------
@@ -26,19 +61,22 @@ Running tests
         SQL> CREATE USER oracle_enhanced IDENTIFIED BY oracle_enhanced;
         SQL> GRANT unlimited tablespace, create session, create table, create sequence, create procedure, create trigger, create view, create materialized view, create database link, create synonym, create type, ctxapp TO oracle_enhanced;
 
-* If you use RVM then switch to corresponding Ruby (1.8.7, 1.9.2 or JRuby) and it is recommended to create isolated gemset for test purposes (e.g. rvm create gemset oracle_enhanced)
+        SQL> CREATE USER oracle_enhanced_schema IDENTIFIED BY oracle_enhanced_schema;
+        SQL> GRANT unlimited tablespace, create session, create table, create sequence, create procedure, create trigger, create view, create materialized view, create database link, create synonym, create type, ctxapp TO oracle_enhanced_schema;
+
+* If you use RVM then switch to corresponding Ruby. It is recommended to create isolated gemsets for test purposes (e.g. rvm create gemset oracle_enhanced)
 
 * Install bundler with
 
         gem install bundler
 
-* Set RAILS_GEM_VERSION to Rails version that you would like to use in oracle_enhanced tests, e.g.
-
-        export RAILS_GEM_VERSION=3.0.3
-
 * Install necessary gems with
 
         bundle install
+
+* Configure database credentials in one of two ways:
+    * copy spec/spec_config.yaml.template to spec/config.yaml and modify as needed
+    * set required environment variables (see DATABASE_NAME in spec_helper.rb)
 
 * Run tests with
 

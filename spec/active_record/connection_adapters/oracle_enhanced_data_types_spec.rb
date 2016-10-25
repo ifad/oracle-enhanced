@@ -1,4 +1,3 @@
-# encoding: utf-8
 require 'spec_helper'
 
 describe "OracleEnhancedAdapter date type detection based on column names" do
@@ -35,59 +34,10 @@ describe "OracleEnhancedAdapter date type detection based on column names" do
     @conn.execute "DROP SEQUENCE test_employees_seq"
   end
 
-  it "should set DATE column type as datetime if emulate_dates_by_column_name is false" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
-    columns = @conn.columns('test_employees')
-    column = columns.detect{|c| c.name == "hire_date"}
-    column.type.should == :datetime
-  end
-
-  it "should set DATE column type as date if column name contains '_date_' and emulate_dates_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
-    columns = @conn.columns('test_employees')
-    column = columns.detect{|c| c.name == "hire_date"}
-    column.type.should == :date
-  end
-
-  it "should set DATE column type as datetime if column name does not contain '_date_' and emulate_dates_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
-    columns = @conn.columns('test_employees')
-    column = columns.detect{|c| c.name == "created_at"}
-    column.type.should == :datetime
-  end
-
-  it "should set DATE column type as datetime if column name contains 'date' as part of other word and emulate_dates_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
-    columns = @conn.columns('test_employees')
-    column = columns.detect{|c| c.name == "updated_at"}
-    column.type.should == :datetime
-  end
-
-  it "should return Time value from DATE column if emulate_dates_by_column_name is false" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
-    columns = @conn.columns('test_employees')
-    column = columns.detect{|c| c.name == "hire_date"}
-    column.type_cast_from_database(Time.now).class.should == Time
-  end
-
-  it "should return Date value from DATE column if column name contains 'date' and emulate_dates_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
-    columns = @conn.columns('test_employees')
-    column = columns.detect{|c| c.name == "hire_date"}
-    column.type_cast_from_database(Time.now).class.should == Date
-  end
-
-  it "should typecast DateTime value to Date value from DATE column if column name contains 'date' and emulate_dates_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
-    columns = @conn.columns('test_employees')
-    column = columns.detect{|c| c.name == "hire_date"}
-    column.type_cast_from_database(DateTime.new(1900,1,1)).class.should == Date
-  end
-
   describe "/ DATE values from ActiveRecord model" do
     before(:each) do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates = false
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates = false
       class ::TestEmployee < ActiveRecord::Base
         self.primary_key = "employee_id"
       end
@@ -108,82 +58,85 @@ describe "OracleEnhancedAdapter date type detection based on column names" do
     after(:each) do
       # @employee.destroy if @employee
       Object.send(:remove_const, "TestEmployee")
-      @conn.clear_types_for_columns
       ActiveRecord::Base.clear_cache! if ActiveRecord::Base.respond_to?(:"clear_cache!")
     end
 
     it "should return Time value from DATE column if emulate_dates_by_column_name is false" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
+      class ::TestEmployee < ActiveRecord::Base
+        attribute :hire_date, :datetime
+      end
       create_test_employee
-      @employee.hire_date.class.should == Time
+      expect(@employee.hire_date.class).to eq(Time)
     end
 
     it "should return Date value from DATE column if column name contains 'date' and emulate_dates_by_column_name is true" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
       create_test_employee
-      @employee.hire_date.class.should == Date
+      expect(@employee.hire_date.class).to eq(Date)
     end
 
     it "should return Date value from DATE column with old date value if column name contains 'date' and emulate_dates_by_column_name is true" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
       create_test_employee(:today => Date.new(1900,1,1))
-      @employee.hire_date.class.should == Date
+      expect(@employee.hire_date.class).to eq(Date)
     end
 
     it "should return Time value from DATE column if column name does not contain 'date' and emulate_dates_by_column_name is true" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+      class ::TestEmployee < ActiveRecord::Base
+        # set_date_columns :created_at
+        attribute :created_at, :datetime
+      end
       create_test_employee
-      @employee.created_at.class.should == Time
+      expect(@employee.created_at.class).to eq(Time)
     end
 
     it "should return Date value from DATE column if emulate_dates_by_column_name is false but column is defined as date" do
       class ::TestEmployee < ActiveRecord::Base
-        set_date_columns :hire_date
+        # set_date_columns :hire_date
+        attribute :hire_date, :date
       end
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
       create_test_employee
-      @employee.hire_date.class.should == Date
+      expect(@employee.hire_date.class).to eq(Date)
     end
 
     it "should return Date value from DATE column with old date value if emulate_dates_by_column_name is false but column is defined as date" do
       class ::TestEmployee < ActiveRecord::Base
-        set_date_columns :hire_date
+        # set_date_columns :hire_date
+        attribute :hire_date, :date
       end
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
       create_test_employee(:today => Date.new(1900,1,1))
-      @employee.hire_date.class.should == Date
-    end
-
-    it "should see set_date_columns values in different connection" do
-      class ::TestEmployee < ActiveRecord::Base
-        set_date_columns :hire_date
-      end
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
-      # establish other connection
-      other_conn = ActiveRecord::Base.oracle_enhanced_connection(CONNECTION_PARAMS)
-      other_conn.get_type_for_column('test_employees', 'hire_date').should == :date
+      expect(@employee.hire_date.class).to eq(Date)
     end
 
     it "should return Time value from DATE column if emulate_dates_by_column_name is true but column is defined as datetime" do
       class ::TestEmployee < ActiveRecord::Base
-        set_datetime_columns :hire_date
+        # set_datetime_columns :hire_date
+        attribute :hire_date, :datetime
       end
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
       create_test_employee
-      @employee.hire_date.class.should == Time
+      expect(@employee.hire_date.class).to eq(Time)
       # change to current time with hours, minutes and seconds
       @employee.hire_date = @now
       @employee.save!
       @employee.reload
-      @employee.hire_date.class.should == Time
-      @employee.hire_date.should == @now
+      expect(@employee.hire_date.class).to eq(Time)
+      expect(@employee.hire_date).to eq(@now)
     end
 
     it "should guess Date or Time value if emulate_dates is true" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates = true
+      class ::TestEmployee < ActiveRecord::Base
+        attribute :hire_date, :date
+        attribute :created_at, :datetime
+      end
       create_test_employee
-      @employee.hire_date.class.should == Date
-      @employee.created_at.class.should == Time
+      expect(@employee.hire_date.class).to eq(Date)
+      expect(@employee.created_at.class).to eq(Time)
     end
 
   end
@@ -224,43 +177,6 @@ describe "OracleEnhancedAdapter integer type detection based on column names" do
     @conn.execute "DROP SEQUENCE test2_employees_seq"
   end
 
-  it "should set NUMBER column type as decimal if emulate_integers_by_column_name is false" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = false
-    columns = @conn.columns('test2_employees')
-    column = columns.detect{|c| c.name == "job_id"}
-    column.type.should == :decimal
-  end
-
-  it "should set NUMBER column type as integer if emulate_integers_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
-    columns = @conn.columns('test2_employees')
-    column = columns.detect{|c| c.name == "job_id"}
-    column.type.should == :integer
-    column = columns.detect{|c| c.name == "id"}
-    column.type.should == :integer
-  end
-
-  it "should set NUMBER column type as decimal if column name does not contain 'id' and emulate_integers_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
-    columns = @conn.columns('test2_employees')
-    column = columns.detect{|c| c.name == "salary"}
-    column.type.should == :decimal
-  end
-
-  it "should return BigDecimal value from NUMBER column if emulate_integers_by_column_name is false" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = false
-    columns = @conn.columns('test2_employees')
-    column = columns.detect{|c| c.name == "job_id"}
-    column.type_cast_from_database(1.0).class.should == BigDecimal
-  end
-
-  it "should return Fixnum value from NUMBER column if column name contains 'id' and emulate_integers_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
-    columns = @conn.columns('test2_employees')
-    column = columns.detect{|c| c.name == "job_id"}
-    column.type_cast_from_database(1.0).class.should == Fixnum
-  end
-
   describe "/ NUMBER values from ActiveRecord model" do
     before(:each) do
       class ::Test2Employee < ActiveRecord::Base
@@ -269,7 +185,6 @@ describe "OracleEnhancedAdapter integer type detection based on column names" do
     
     after(:each) do
       Object.send(:remove_const, "Test2Employee")
-      @conn.clear_types_for_columns
       ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans = true
       ActiveRecord::Base.clear_cache! if ActiveRecord::Base.respond_to?(:"clear_cache!")
     end
@@ -286,53 +201,65 @@ describe "OracleEnhancedAdapter integer type detection based on column names" do
     end
 
     it "should return BigDecimal value from NUMBER column if emulate_integers_by_column_name is false" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = false
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = false
       create_employee2
-      @employee2.job_id.class.should == BigDecimal
+      expect(@employee2.job_id.class).to eq(BigDecimal)
     end
 
     it "should return Fixnum value from NUMBER column if column name contains 'id' and emulate_integers_by_column_name is true" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
+      class ::Test2Employee < ActiveRecord::Base
+        attribute :job_id, :integer
+      end
       create_employee2
-      @employee2.job_id.class.should == Fixnum
+      expect(@employee2.job_id.class).to eq(Fixnum)
     end
 
     it "should return Fixnum value from NUMBER column with integer value using _before_type_cast method" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
       create_employee2
-      @employee2.job_id_before_type_cast.class.should == Fixnum
+      expect(@employee2.job_id_before_type_cast.class).to eq(Fixnum)
     end
 
     it "should return BigDecimal value from NUMBER column if column name does not contain 'id' and emulate_integers_by_column_name is true" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = true
       create_employee2
-      @employee2.salary.class.should == BigDecimal
+      expect(@employee2.salary.class).to eq(BigDecimal)
     end
 
     it "should return Fixnum value from NUMBER column if column specified in set_integer_columns" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = false
-      Test2Employee.set_integer_columns :job_id
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_integers_by_column_name = false
+      # Test2Employee.set_integer_columns :job_id
+      class ::Test2Employee < ActiveRecord::Base
+        attribute :job_id, :integer
+      end
       create_employee2
-      @employee2.job_id.class.should == Fixnum
+      expect(@employee2.job_id.class).to eq(Fixnum)
     end
 
     it "should return Boolean value from NUMBER(1) column if emulate booleans is used" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans = true
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans = true
       create_employee2
-      @employee2.is_manager.class.should == TrueClass
+      expect(@employee2.is_manager.class).to eq(TrueClass)
     end
 
     it "should return Fixnum value from NUMBER(1) column if emulate booleans is not used" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans = false
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans = false
+      class ::Test2Employee < ActiveRecord::Base
+        attribute :is_manager, :integer
+      end
       create_employee2
-      @employee2.is_manager.class.should == Fixnum
+      expect(@employee2.is_manager.class).to eq(Fixnum)
     end
 
     it "should return Fixnum value from NUMBER(1) column if column specified in set_integer_columns" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans = true
-      Test2Employee.set_integer_columns :is_manager
+      # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans = true
+      # Test2Employee.set_integer_columns :is_manager
+      class ::Test2Employee < ActiveRecord::Base
+        attribute :is_manager, :integer
+      end
       create_employee2
-      @employee2.is_manager.class.should == Fixnum
+      expect(@employee2.is_manager.class).to eq(Fixnum)
     end
 
   end
@@ -373,84 +300,61 @@ describe "OracleEnhancedAdapter boolean type detection based on string column ty
   after(:all) do
     @conn.execute "DROP TABLE test3_employees"
     @conn.execute "DROP SEQUENCE test3_employees_seq"
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
+    # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
   end
 
-  it "should set CHAR/VARCHAR2 column type as string if emulate_booleans_from_strings is false" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
-    columns = @conn.columns('test3_employees')
-    %w(has_email has_phone active_flag manager_yn).each do |col|
-      column = columns.detect{|c| c.name == col}
-      column.type.should == :string
+  before(:each) do
+    class ::Test3Employee < ActiveRecord::Base
     end
   end
 
-  it "should set CHAR/VARCHAR2 column type as boolean if emulate_booleans_from_strings is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
-    columns = @conn.columns('test3_employees')
-    %w(has_email has_phone active_flag manager_yn).each do |col|
-      column = columns.detect{|c| c.name == col}
-      column.type.should == :boolean
-    end
+  after(:each) do
+    Object.send(:remove_const, "Test3Employee")
+    ActiveRecord::Base.clear_cache! if ActiveRecord::Base.respond_to?(:"clear_cache!")
   end
 
-  it "should set VARCHAR2 column type as string if column name does not contain 'flag' or 'yn' and emulate_booleans_from_strings is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
-    columns = @conn.columns('test3_employees')
-    %w(phone_number email).each do |col|
-      column = columns.detect{|c| c.name == col}
-      column.type.should == :string
-    end
-  end
+  describe "default values in new records" do
+    context "when emulate_booleans_from_strings is false" do
+      before do
+        ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
+      end
 
-  it "should return string value from VARCHAR2 boolean column if emulate_booleans_from_strings is false" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
-    columns = @conn.columns('test3_employees')
-    %w(has_email has_phone active_flag manager_yn).each do |col|
-      column = columns.detect{|c| c.name == col}
-      column.type_cast_from_database("Y").class.should == String
+      it "are Y or N" do
+        subject = Test3Employee.new
+        expect(subject.has_phone).to eq('Y')
+        expect(subject.manager_yn).to eq('N')
+      end
     end
-  end
 
-  it "should return boolean value from VARCHAR2 boolean column if emulate_booleans_from_strings is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
-    columns = @conn.columns('test3_employees')
-    %w(has_email has_phone active_flag manager_yn).each do |col|
-      column = columns.detect{|c| c.name == col}
-      column.type_cast_from_database("Y").class.should == TrueClass
-      column.type_cast_from_database("N").class.should == FalseClass
+    context "when emulate_booleans_from_strings is true" do
+      before do
+        ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
+      end
+
+      it "are True or False" do
+        class ::Test3Employee < ActiveRecord::Base
+          attribute :has_phone, :boolean
+          attribute :manager_yn, :boolean, default: false
+        end
+        subject = Test3Employee.new
+        expect(subject.has_phone).to be_a(TrueClass)
+        expect(subject.manager_yn).to be_a(FalseClass)
+      end
     end
-  end
-
-  it "should translate boolean type to VARCHAR2(1) if emulate_booleans_from_strings is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
-    ActiveRecord::Base.connection.type_to_sql(
-      :boolean, nil, nil, nil).should == "VARCHAR2(1)"
   end
 
   it "should translate boolean type to NUMBER(1) if emulate_booleans_from_strings is false" do
     ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
-    ActiveRecord::Base.connection.type_to_sql(
-      :boolean, nil, nil, nil).should == "NUMBER(1)"
-  end
-
-  it "should get default value from VARCHAR2 boolean column if emulate_booleans_from_strings is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
-    columns = @conn.columns('test3_employees')
-    columns.detect{|c| c.name == 'has_phone'}.default.should be_true
-    columns.detect{|c| c.name == 'manager_yn'}.default.should be_false
+    expect(ActiveRecord::Base.connection.type_to_sql(
+      :boolean, nil, nil, nil)).to eq("NUMBER(1)")
   end
 
   describe "/ VARCHAR2 boolean values from ActiveRecord model" do
     before(:each) do
       ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
-      class ::Test3Employee < ActiveRecord::Base
-      end
     end
 
     after(:each) do
-      Object.send(:remove_const, "Test3Employee")
-      @conn.clear_types_for_columns
       ActiveRecord::Base.clear_cache! if ActiveRecord::Base.respond_to?(:"clear_cache!")
     end
 
@@ -472,60 +376,107 @@ describe "OracleEnhancedAdapter boolean type detection based on string column ty
       ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
       create_employee3
       %w(has_email has_phone active_flag manager_yn).each do |col|
-        @employee3.send(col.to_sym).class.should == String
+        expect(@employee3.send(col.to_sym).class).to eq(String)
       end
     end
 
     it "should return boolean value from VARCHAR2 boolean column if emulate_booleans_from_strings is true" do
       ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
+      class ::Test3Employee < ActiveRecord::Base
+        attribute :has_email, :boolean
+        attribute :active_flag, :boolean
+        attribute :has_phone, :boolean, default: false
+        attribute :manager_yn, :boolean, default: false
+      end
       create_employee3
       %w(has_email active_flag).each do |col|
-        @employee3.send(col.to_sym).class.should == TrueClass
-        @employee3.send((col+"_before_type_cast").to_sym).should == "Y"
+        expect(@employee3.send(col.to_sym).class).to eq(TrueClass)
+        expect(@employee3.send((col+"_before_type_cast").to_sym)).to eq("Y")
       end
       %w(has_phone manager_yn).each do |col|
-        @employee3.send(col.to_sym).class.should == FalseClass
-        @employee3.send((col+"_before_type_cast").to_sym).should == "N"
+        expect(@employee3.send(col.to_sym).class).to eq(FalseClass)
+        expect(@employee3.send((col+"_before_type_cast").to_sym)).to eq("N")
       end
     end
 
     it "should return string value from VARCHAR2 column if it is not boolean column and emulate_booleans_from_strings is true" do
       ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
       create_employee3
-      @employee3.first_name.class.should == String
+      expect(@employee3.first_name.class).to eq(String)
     end
 
     it "should return boolean value from VARCHAR2 boolean column if column specified in set_boolean_columns" do
       ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
-      Test3Employee.set_boolean_columns :test_boolean
+      # Test3Employee.set_boolean_columns :test_boolean
+      class ::Test3Employee < ActiveRecord::Base
+        attribute :test_boolean, :boolean
+      end
       create_employee3(:test_boolean => true)
-      @employee3.test_boolean.class.should == TrueClass
-      @employee3.test_boolean_before_type_cast.should == "Y"
+      expect(@employee3.test_boolean.class).to eq(TrueClass)
+      expect(@employee3.test_boolean_before_type_cast).to eq("Y")
       create_employee3(:test_boolean => false)
-      @employee3.test_boolean.class.should == FalseClass
-      @employee3.test_boolean_before_type_cast.should == "N"
+      expect(@employee3.test_boolean.class).to eq(FalseClass)
+      expect(@employee3.test_boolean_before_type_cast).to eq("N")
       create_employee3(:test_boolean => nil)
-      @employee3.test_boolean.class.should == NilClass
-      @employee3.test_boolean_before_type_cast.should == nil
+      expect(@employee3.test_boolean.class).to eq(NilClass)
+      expect(@employee3.test_boolean_before_type_cast).to eq(nil)
       create_employee3(:test_boolean => "")
-      @employee3.test_boolean.class.should == NilClass
-      @employee3.test_boolean_before_type_cast.should == nil
+      expect(@employee3.test_boolean.class).to eq(NilClass)
+      expect(@employee3.test_boolean_before_type_cast).to eq(nil)
     end
 
     it "should return string value from VARCHAR2 column with boolean column name but is specified in set_string_columns" do
       ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
-      Test3Employee.set_string_columns :active_flag
+      # Test3Employee.set_string_columns :active_flag
+      class ::Test3Employee < ActiveRecord::Base
+        attribute :active_flag, :string
+      end
       create_employee3
-      @employee3.active_flag.class.should == String
+      expect(@employee3.active_flag.class).to eq(String)
     end
 
   end
 
 end
 
+describe "OracleEnhancedAdapter boolean support when emulate_booleans_from_strings = true" do
+  before(:all) do
+    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = true
+    ActiveRecord::Base.establish_connection(CONNECTION_PARAMS)
+    ActiveRecord::Schema.define do
+      create_table :posts, :force => true do |t|
+        t.string  :name,        null: false
+        t.boolean :is_default, default: false
+      end
+    end
+  end
+
+  after(:all) do
+    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_booleans_from_strings = false
+  end
+
+  before(:each) do
+    class ::Post < ActiveRecord::Base
+    end
+  end
+
+  after(:each) do
+    Object.send(:remove_const, "Post")
+    ActiveRecord::Base.clear_cache!
+  end
+
+  it "boolean should not change after reload" do
+    post = Post.create(name: 'Test 1', is_default: false)
+    expect(post.is_default).to be false
+    post.reload
+    expect(post.is_default).to be false
+  end
+end
+
 describe "OracleEnhancedAdapter timestamp with timezone support" do
   before(:all) do
-    ActiveRecord::Base.establish_connection(CONNECTION_PARAMS)
+    ActiveRecord::Base.default_timezone = :local
+    ActiveRecord::Base.establish_connection(CONNECTION_WITH_TIMEZONE_PARAMS)
     @conn = ActiveRecord::Base.connection
     @conn.execute <<-SQL
       CREATE TABLE test_employees (
@@ -554,12 +505,14 @@ describe "OracleEnhancedAdapter timestamp with timezone support" do
   after(:all) do
     @conn.execute "DROP TABLE test_employees"
     @conn.execute "DROP SEQUENCE test_employees_seq"
+    ActiveRecord::Base.default_timezone = :utc
   end
 
   it "should set TIMESTAMP columns type as datetime" do
+    skip "TIMESTAMP sql_type should be :datetime in Rails 5"
     columns = @conn.columns('test_employees')
     ts_columns = columns.select{|c| c.name =~ /created_at/}
-    ts_columns.each {|c| c.type.should == :timestamp}
+    ts_columns.each {|c| expect(c.type).to eq(:timestamp)}
   end
 
   describe "/ TIMESTAMP WITH TIME ZONE values from ActiveRecord model" do
@@ -583,8 +536,8 @@ describe "OracleEnhancedAdapter timestamp with timezone support" do
       )
       @employee.reload
       [:created_at, :created_at_tz, :created_at_ltz].each do |c|
-        @employee.send(c).class.should == Time
-        @employee.send(c).to_f.should == @now.to_f
+        expect(@employee.send(c).class).to eq(Time)
+        expect(@employee.send(c).to_f).to eq(@now.to_f)
       end
     end
 
@@ -597,8 +550,8 @@ describe "OracleEnhancedAdapter timestamp with timezone support" do
       )
       @employee.reload
       [:created_at, :created_at_tz, :created_at_ltz].each do |c|
-        @employee.send(c).class.should == Time
-        @employee.send(c).to_f.should == @now.to_f
+        expect(@employee.send(c).class).to eq(Time)
+        expect(@employee.send(c).to_f).to eq(@now.to_f)
       end
     end
 
@@ -644,8 +597,8 @@ describe "OracleEnhancedAdapter date and timestamp with different NLS date forma
   end
 
   before(:each) do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates = false
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
+    # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates = false
+    # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
     class ::TestEmployee < ActiveRecord::Base
       self.primary_key = "employee_id"
     end
@@ -656,6 +609,7 @@ describe "OracleEnhancedAdapter date and timestamp with different NLS date forma
   after(:each) do
     Object.send(:remove_const, "TestEmployee")
     ActiveRecord::Base.clear_cache! if ActiveRecord::Base.respond_to?(:"clear_cache!")
+    ActiveRecord::Base.default_timezone = :utc
   end
 
   def create_test_employee
@@ -670,45 +624,37 @@ describe "OracleEnhancedAdapter date and timestamp with different NLS date forma
   end
 
   it "should return Time value from DATE column if emulate_dates_by_column_name is false" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
+    # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = false
+    ActiveRecord::Base.default_timezone = :local
+    class ::TestEmployee < ActiveRecord::Base
+      attribute :hire_date, :datetime
+    end
     create_test_employee
-    @employee.hire_date.class.should == Time
-    @employee.hire_date.should == @today.to_time
+    expect(@employee.hire_date.class).to eq(Time)
+    expect(@employee.hire_date).to eq(@today.to_time)
   end
 
   it "should return Date value from DATE column if column name contains 'date' and emulate_dates_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+    # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
     create_test_employee
-    @employee.hire_date.class.should == Date
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date.class).to eq(Date)
+    expect(@employee.hire_date).to eq(@today)
   end
 
   it "should return Time value from DATE column if column name does not contain 'date' and emulate_dates_by_column_name is true" do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+    # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+    class ::TestEmployee < ActiveRecord::Base
+      attribute :created_at, :datetime
+    end
     create_test_employee
-    @employee.created_at.class.should == Time
-    @employee.created_at.should == @now
+    expect(@employee.created_at.class).to eq(Time)
+    expect(@employee.created_at).to eq(@now)
   end
 
   it "should return Time value from TIMESTAMP columns" do
     create_test_employee
-    @employee.created_at_ts.class.should == Time
-    @employee.created_at_ts.should == @now
-  end
-
-  it "should quote Date values with TO_DATE" do
-    @conn.quote(@today).should == "TO_DATE('#{@today.year}-#{"%02d" % @today.month}-#{"%02d" % @today.day}','YYYY-MM-DD HH24:MI:SS')"
-  end
-
-  it "should quote Time values with TO_DATE" do
-    @conn.quote(@now).should == "TO_DATE('#{@now.year}-#{"%02d" % @now.month}-#{"%02d" % @now.day} "+
-                                "#{"%02d" % @now.hour}:#{"%02d" % @now.min}:#{"%02d" % @now.sec}','YYYY-MM-DD HH24:MI:SS')"
-  end
-
-  it "should quote Time values with TO_TIMESTAMP" do
-    @ts = @now + 0.1
-    @conn.quote(@ts).should == "TO_TIMESTAMP('#{@ts.year}-#{"%02d" % @ts.month}-#{"%02d" % @ts.day} "+
-                                "#{"%02d" % @ts.hour}:#{"%02d" % @ts.min}:#{"%02d" % @ts.sec}:100000','YYYY-MM-DD HH24:MI:SS:FF6')"
+    expect(@employee.created_at_ts.class).to eq(Time)
+    expect(@employee.created_at_ts).to eq(@now)
   end
 
 end
@@ -733,6 +679,7 @@ describe "OracleEnhancedAdapter assign string to :date and :datetime columns" do
     SQL
     class ::TestEmployee < ActiveRecord::Base
       self.primary_key = "employee_id"
+      attribute :last_login_at, :datetime
     end
     @today = Date.new(2008,6,28)
     @today_iso = "2008-06-28"
@@ -755,7 +702,11 @@ describe "OracleEnhancedAdapter assign string to :date and :datetime columns" do
   end
 
   before(:each) do
-    ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+    # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.emulate_dates_by_column_name = true
+  end
+
+  after(:each) do
+    ActiveRecord::Base.default_timezone = :utc
   end
 
   it "should assign ISO string to date column" do
@@ -764,9 +715,9 @@ describe "OracleEnhancedAdapter assign string to :date and :datetime columns" do
       :last_name => "Last",
       :hire_date => @today_iso
     )
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date).to eq(@today)
     @employee.reload
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date).to eq(@today)
   end
 
   it "should assign NLS string to date column" do
@@ -776,9 +727,9 @@ describe "OracleEnhancedAdapter assign string to :date and :datetime columns" do
       :last_name => "Last",
       :hire_date => @today_nls
     )
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date).to eq(@today)
     @employee.reload
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date).to eq(@today)
   end
 
   it "should assign ISO time string to date column" do
@@ -787,9 +738,9 @@ describe "OracleEnhancedAdapter assign string to :date and :datetime columns" do
       :last_name => "Last",
       :hire_date => @now_iso
     )
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date).to eq(@today)
     @employee.reload
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date).to eq(@today)
   end
 
   it "should assign NLS time string to date column" do
@@ -800,32 +751,34 @@ describe "OracleEnhancedAdapter assign string to :date and :datetime columns" do
       :last_name => "Last",
       :hire_date => @now_nls
     )
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date).to eq(@today)
     @employee.reload
-    @employee.hire_date.should == @today
+    expect(@employee.hire_date).to eq(@today)
   end
 
   it "should assign ISO time string to datetime column" do
+    ActiveRecord::Base.default_timezone = :local
     @employee = TestEmployee.create(
       :first_name => "First",
       :last_name => "Last",
       :last_login_at => @now_iso
     )
-    @employee.last_login_at.should == @now
+    expect(@employee.last_login_at).to eq(@now)
     @employee.reload
-    @employee.last_login_at.should == @now
+    expect(@employee.last_login_at).to eq(@now)
   end
 
   it "should assign NLS time string to datetime column" do
+    ActiveRecord::Base.default_timezone = :local
     ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.string_to_time_format = @nls_time_format
     @employee = TestEmployee.create(
       :first_name => "First",
       :last_name => "Last",
       :last_login_at => @now_nls
     )
-    @employee.last_login_at.should == @now
+    expect(@employee.last_login_at).to eq(@now)
     @employee.reload
-    @employee.last_login_at.should == @now
+    expect(@employee.last_login_at).to eq(@now)
   end
 
   it "should assign NLS time string with time zone to datetime column" do
@@ -835,23 +788,25 @@ describe "OracleEnhancedAdapter assign string to :date and :datetime columns" do
       :last_name => "Last",
       :last_login_at => @now_nls_with_tz
     )
-    @employee.last_login_at.should == @now_with_tz
+    expect(@employee.last_login_at).to eq(@now_with_tz)
     @employee.reload
-    @employee.last_login_at.should == @now_with_tz
+    expect(@employee.last_login_at).to eq(@now_with_tz)
   end
 
   it "should assign ISO date string to datetime column" do
+    ActiveRecord::Base.default_timezone = :local
     @employee = TestEmployee.create(
       :first_name => "First",
       :last_name => "Last",
       :last_login_at => @today_iso
     )
-    @employee.last_login_at.should == @today.to_time
+    expect(@employee.last_login_at).to eq(@today.to_time)
     @employee.reload
-    @employee.last_login_at.should == @today.to_time
+    expect(@employee.last_login_at).to eq(@today.to_time)
   end
 
   it "should assign NLS date string to datetime column" do
+    ActiveRecord::Base.default_timezone = :local
     ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.string_to_date_format = @nls_date_format
     # ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.string_to_time_format = @nls_time_format
     @employee = TestEmployee.create(
@@ -859,9 +814,9 @@ describe "OracleEnhancedAdapter assign string to :date and :datetime columns" do
       :last_name => "Last",
       :last_login_at => @today_nls
     )
-    @employee.last_login_at.should == @today.to_time
+    expect(@employee.last_login_at).to eq(@today.to_time)
     @employee.reload
-    @employee.last_login_at.should == @today.to_time
+    expect(@employee.last_login_at).to eq(@today.to_time)
   end
   
 end
@@ -943,16 +898,16 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
       :first_name => "First",
       :last_name => "Last"
     )
-    @employee.should be_valid
+    expect(@employee).to be_valid
     @employee.reload
-    @employee.comments.should be_nil
+    expect(@employee.comments).to be_nil
   end
 
   it "should accept Symbol value for CLOB column" do
     @employee = TestEmployee.create!(
       :comments => :test_comment
     )
-    @employee.should be_valid
+    expect(@employee).to be_valid
   end
 
   it "should respect attr_readonly setting for CLOB column" do
@@ -960,13 +915,13 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
       :first_name => "First",
       :comments => "initial"
     )
-    @employee.should be_valid
+    expect(@employee).to be_valid
     @employee.reload
-    @employee.comments.should == 'initial'
+    expect(@employee.comments).to eq('initial')
     @employee.comments = "changed"
-    @employee.save.should == true
+    expect(@employee.save).to eq(true)
     @employee.reload
-    @employee.comments.should == 'initial'
+    expect(@employee.comments).to eq('initial')
   end
 
   it "should work for serialized readonly CLOB columns", serialized: true do
@@ -974,16 +929,16 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
       :first_name => "First",
       :comments => nil
     )
-    @employee.comments.should be_nil
-    @employee.save.should == true
-    @employee.should be_valid
+    expect(@employee.comments).to be_nil
+    expect(@employee.save).to eq(true)
+    expect(@employee).to be_valid
     @employee.reload
-    @employee.comments.should be_nil
+    expect(@employee.comments).to be_nil
     @employee.comments = {}
-    @employee.save.should == true
+    expect(@employee.save).to eq(true)
     @employee.reload
     #should not set readonly
-    @employee.comments.should be_nil
+    expect(@employee.comments).to be_nil
   end
 
 
@@ -994,7 +949,7 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
       :comments => @char_data
     )
     @employee.reload
-    @employee.comments.should == @char_data
+    expect(@employee.comments).to eq(@char_data)
   end
 
   it "should update record with CLOB data" do
@@ -1003,11 +958,11 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
       :last_name => "Last"
     )
     @employee.reload
-    @employee.comments.should be_nil
+    expect(@employee.comments).to be_nil
     @employee.comments = @char_data
     @employee.save!
     @employee.reload
-    @employee.comments.should == @char_data
+    expect(@employee.comments).to eq(@char_data)
   end
 
   it "should update record with zero-length CLOB data" do
@@ -1016,11 +971,11 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
       :last_name => "Last"
     )
     @employee.reload
-    @employee.comments.should be_nil
+    expect(@employee.comments).to be_nil
     @employee.comments = ''
     @employee.save!
     @employee.reload
-    @employee.comments.should == ''
+    expect(@employee.comments).to eq('')
   end
 
   it "should update record that has existing CLOB data with different CLOB data" do
@@ -1033,7 +988,7 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
     @employee.comments = @char_data2
     @employee.save!
     @employee.reload
-    @employee.comments.should == @char_data2
+    expect(@employee.comments).to eq(@char_data2)
   end
 
   it "should update record that has existing CLOB data with nil" do
@@ -1046,7 +1001,7 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
     @employee.comments = nil
     @employee.save!
     @employee.reload
-    @employee.comments.should be_nil
+    expect(@employee.comments).to be_nil
   end
 
   it "should update record that has existing CLOB data with zero-length CLOB data" do
@@ -1059,7 +1014,7 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
     @employee.comments = ''
     @employee.save!
     @employee.reload
-    @employee.comments.should == ''
+    expect(@employee.comments).to eq('')
   end
 
   it "should update record that has zero-length CLOB data with non-empty CLOB data" do
@@ -1069,11 +1024,11 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
       :comments => ''
     )
     @employee.reload
-    @employee.comments.should == ''
+    expect(@employee.comments).to eq('')
     @employee.comments = @char_data
     @employee.save!
     @employee.reload
-    @employee.comments.should == @char_data
+    expect(@employee.comments).to eq(@char_data)
   end
 
   it "should store serializable ruby data structures" do
@@ -1083,11 +1038,11 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
       :comments => ruby_data1
     )
     @employee.reload
-    @employee.comments.should == ruby_data1
+    expect(@employee.comments).to eq(ruby_data1)
     @employee.comments = ruby_data2
     @employee.save
     @employee.reload
-    @employee.comments.should == ruby_data2
+    expect(@employee.comments).to eq(ruby_data2)
   end
 
   it "should keep unchanged serialized data when other columns changed" do
@@ -1099,7 +1054,7 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
     @employee.first_name = "Steve"
     @employee.save
     @employee.reload
-    @employee.comments.should == "initial serialized data"
+    expect(@employee.comments).to eq("initial serialized data")
   end
 
   it "should keep serialized data after save" do
@@ -1107,11 +1062,11 @@ describe "OracleEnhancedAdapter handling of CLOB columns" do
     @employee.comments = {:length=>{:is=>1}}
     @employee.save
     @employee.reload
-    @employee.comments.should == {:length=>{:is=>1}}
+    expect(@employee.comments).to eq({:length=>{:is=>1}})
     @employee.comments = {:length=>{:is=>2}}
     @employee.save
     @employee.reload
-    @employee.comments.should == {:length=>{:is=>2}}
+    expect(@employee.comments).to eq({:length=>{:is=>2}})
   end
 end
 
@@ -1158,7 +1113,7 @@ describe "OracleEnhancedAdapter handling of BLOB columns" do
       :binary_data => @binary_data
     )
     @employee.reload
-    @employee.binary_data.should == @binary_data
+    expect(@employee.binary_data).to eq(@binary_data)
   end
 
   it "should update record with BLOB data" do
@@ -1167,11 +1122,11 @@ describe "OracleEnhancedAdapter handling of BLOB columns" do
       :last_name => "Last"
     )
     @employee.reload
-    @employee.binary_data.should be_nil
+    expect(@employee.binary_data).to be_nil
     @employee.binary_data = @binary_data
     @employee.save!
     @employee.reload
-    @employee.binary_data.should == @binary_data
+    expect(@employee.binary_data).to eq(@binary_data)
   end
 
   it "should update record with zero-length BLOB data" do
@@ -1180,11 +1135,11 @@ describe "OracleEnhancedAdapter handling of BLOB columns" do
       :last_name => "Last"
     )
     @employee.reload
-    @employee.binary_data.should be_nil
+    expect(@employee.binary_data).to be_nil
     @employee.binary_data = ''
     @employee.save!
     @employee.reload
-    @employee.binary_data.should == ''
+    expect(@employee.binary_data).to eq('')
   end
 
   it "should update record that has existing BLOB data with different BLOB data" do
@@ -1197,7 +1152,7 @@ describe "OracleEnhancedAdapter handling of BLOB columns" do
     @employee.binary_data = @binary_data2
     @employee.save!
     @employee.reload
-    @employee.binary_data.should == @binary_data2
+    expect(@employee.binary_data).to eq(@binary_data2)
   end
 
   it "should update record that has existing BLOB data with nil" do
@@ -1210,7 +1165,7 @@ describe "OracleEnhancedAdapter handling of BLOB columns" do
     @employee.binary_data = nil
     @employee.save!
     @employee.reload
-    @employee.binary_data.should be_nil
+    expect(@employee.binary_data).to be_nil
   end
 
   it "should update record that has existing BLOB data with zero-length BLOB data" do
@@ -1223,7 +1178,7 @@ describe "OracleEnhancedAdapter handling of BLOB columns" do
     @employee.binary_data = ''
     @employee.save!
     @employee.reload
-    @employee.binary_data.should == ''
+    expect(@employee.binary_data).to eq('')
   end
 
   it "should update record that has zero-length BLOB data with non-empty BLOB data" do
@@ -1233,11 +1188,11 @@ describe "OracleEnhancedAdapter handling of BLOB columns" do
       :binary_data => ''
     )
     @employee.reload
-    @employee.binary_data.should == ''
+    expect(@employee.binary_data).to eq('')
     @employee.binary_data = @binary_data
     @employee.save!
     @employee.reload
-    @employee.binary_data.should == @binary_data
+    expect(@employee.binary_data).to eq(@binary_data)
   end
 end
 
@@ -1284,7 +1239,7 @@ describe "OracleEnhancedAdapter handling of RAW columns" do
       :binary_data => @binary_data
     )
     @employee.reload
-    @employee.binary_data.should == @binary_data
+    expect(@employee.binary_data).to eq(@binary_data)
   end
 
   it "should update record with RAW data" do
@@ -1293,11 +1248,11 @@ describe "OracleEnhancedAdapter handling of RAW columns" do
       :last_name => "Last"
     )
     @employee.reload
-    @employee.binary_data.should be_nil
+    expect(@employee.binary_data).to be_nil
     @employee.binary_data = @binary_data
     @employee.save!
     @employee.reload
-    @employee.binary_data.should == @binary_data
+    expect(@employee.binary_data).to eq(@binary_data)
   end
 
   it "should update record with zero-length RAW data" do
@@ -1306,11 +1261,11 @@ describe "OracleEnhancedAdapter handling of RAW columns" do
       :last_name => "Last"
     )
     @employee.reload
-    @employee.binary_data.should be_nil
+    expect(@employee.binary_data).to be_nil
     @employee.binary_data = ''
     @employee.save!
     @employee.reload
-    @employee.binary_data.should.nil?
+    expect(@employee.binary_data).to be_nil
   end
 
   it "should update record that has existing RAW data with different RAW data" do
@@ -1323,7 +1278,7 @@ describe "OracleEnhancedAdapter handling of RAW columns" do
     @employee.binary_data = @binary_data2
     @employee.save!
     @employee.reload
-    @employee.binary_data.should == @binary_data2
+    expect(@employee.binary_data).to eq(@binary_data2)
   end
 
   it "should update record that has existing RAW data with nil" do
@@ -1336,7 +1291,7 @@ describe "OracleEnhancedAdapter handling of RAW columns" do
     @employee.binary_data = nil
     @employee.save!
     @employee.reload
-    @employee.binary_data.should be_nil
+    expect(@employee.binary_data).to be_nil
   end
 
   it "should update record that has existing RAW data with zero-length RAW data" do
@@ -1349,7 +1304,7 @@ describe "OracleEnhancedAdapter handling of RAW columns" do
     @employee.binary_data = ''
     @employee.save!
     @employee.reload
-    @employee.binary_data.should.nil?
+    expect(@employee.binary_data).to be_nil
   end
 
   it "should update record that has zero-length BLOB data with non-empty RAW data" do
@@ -1362,7 +1317,7 @@ describe "OracleEnhancedAdapter handling of RAW columns" do
     @employee.binary_data = @binary_data
     @employee.save!
     @employee.reload
-    @employee.binary_data.should == @binary_data
+    expect(@employee.binary_data).to eq(@binary_data)
   end
 end
 
@@ -1398,21 +1353,12 @@ describe "OracleEnhancedAdapter quoting of NCHAR and NVARCHAR2 columns" do
     ActiveRecord::Base.clear_cache! if ActiveRecord::Base.respond_to?(:"clear_cache!")
   end
 
-  it "should set nchar instance variable" do
-    columns = @conn.columns('test_items')
-    %w(nchar_column nvarchar2_column char_column varchar2_column).each do |col|
-      column = columns.detect{|c| c.name == col}
-      column.type.should == :string
-      column.nchar.should == (col[0,1] == 'n' ? true : nil)
-    end
-  end
-
   it "should quote with N prefix" do
     columns = @conn.columns('test_items')
     %w(nchar_column nvarchar2_column char_column varchar2_column).each do |col|
       column = columns.detect{|c| c.name == col}
-      @conn.quote('abc', column).should == (column.nchar ? "N'abc'" : "'abc'")
-      @conn.quote(nil, column).should == 'NULL'
+      expect(@conn.quote('abc', column)).to eq(column.sql_type[0,1] == 'N' ? "N'abc'" : "'abc'")
+      expect(@conn.quote(nil, column)).to eq('NULL')
     end
   end
 
@@ -1422,8 +1368,8 @@ describe "OracleEnhancedAdapter quoting of NCHAR and NVARCHAR2 columns" do
       :nchar_column => nchar_data,
       :nvarchar2_column => nchar_data
     ).reload
-    item.nchar_column.should == nchar_data + ' '*17
-    item.nvarchar2_column.should == nchar_data
+    expect(item.nchar_column).to eq(nchar_data + ' '*17)
+    expect(item.nvarchar2_column).to eq(nchar_data)
   end
 
 end
@@ -1466,6 +1412,6 @@ describe "OracleEnhancedAdapter handling of BINARY_FLOAT columns" do
   it "should set BINARY_FLOAT column type as float" do
     columns = @conn.columns('test2_employees')
     column = columns.detect{|c| c.name == "hourly_rate"}
-    column.type.should == :float
+    expect(column.type).to eq(:float)
   end
 end

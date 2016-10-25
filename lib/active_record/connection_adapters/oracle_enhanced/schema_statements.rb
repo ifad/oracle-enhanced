@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 require 'digest/sha1'
 
 module ActiveRecord
@@ -40,13 +39,21 @@ module ActiveRecord
         #     t.string      :last_name, :comment => “Surname”
         #   end
 
-        def create_table(table_name, options = {})
+        def create_table(table_name, comment: nil, **options)
           create_sequence = options[:id] != false
-          column_comments = {}
-          temporary = options.delete(:temporary)
-          additional_options = options
-          td = create_table_definition table_name, temporary, additional_options
-          td.primary_key(options[:primary_key] || Base.get_primary_key(table_name.to_s.singularize)) unless options[:id] == false
+          td = create_table_definition table_name, options[:temporary], options[:options], options[:as], options[:tablespace], options[:organization], comment: comment
+
+          if options[:id] != false && !options[:as]
+            pk = options.fetch(:primary_key) do
+              Base.get_primary_key table_name.to_s.singularize
+            end
+
+            if pk.is_a?(Array)
+              td.primary_keys pk
+            else
+              td.primary_key pk, options.fetch(:id, :primary_key), options
+            end
+          end
 
           # store that primary key was defined in create_table block
           unless create_sequence
@@ -59,23 +66,10 @@ module ActiveRecord
             end
           end
 
-          # store column comments
-          class << td
-            attr_accessor :column_comments
-            def column(name, type, options = {})
-              if options[:comment]
-                self.column_comments ||= {}
-                self.column_comments[name] = options[:comment]
-              end
-              super(name, type, options)
-            end
-          end
-
           yield td if block_given?
           create_sequence = create_sequence || td.create_sequence
-          column_comments = td.column_comments if td.column_comments
 
-          if options[:force] && table_exists?(table_name)
+          if options[:force] && data_source_exists?(table_name)
             drop_table(table_name, options)
           end
 
@@ -83,19 +77,18 @@ module ActiveRecord
 
           create_sequence_and_trigger(table_name, options) if create_sequence
 
-          add_table_comment table_name, options[:comment]
-          column_comments.each do |column_name, comment|
-            add_comment table_name, column_name, comment
+          if supports_comments? && !supports_comments_in_create?
+            change_table_comment(table_name, comment) if comment
+            td.columns.each do |column|
+              change_column_comment(table_name, column.name, column.comment) if column.comment
+            end
           end
-          td.indexes.each_pair { |c,o| add_index table_name, c, o }
+          td.indexes.each { |c,o| add_index table_name, c, o }
 
-          td.foreign_keys.each_pair do |other_table_name, foreign_key_options|
-            add_foreign_key(table_name, other_table_name, foreign_key_options)
-          end
         end
 
-        def create_table_definition(name, temporary, options)
-          ActiveRecord::ConnectionAdapters::OracleEnhanced::TableDefinition.new native_database_types, name, temporary, options
+        def create_table_definition(*args)
+          ActiveRecord::ConnectionAdapters::OracleEnhanced::TableDefinition.new(*args)
         end
 
         def rename_table(table_name, new_name) #:nodoc:
@@ -120,38 +113,11 @@ module ActiveRecord
         end
 
         def dump_schema_information #:nodoc:
-          sm_table = ActiveRecord::Migrator.schema_migrations_table_name
-          migrated = select_values("SELECT version FROM #{sm_table} ORDER BY version")
-          join_with_statement_token(migrated.map{|v| "INSERT INTO #{sm_table} (version) VALUES ('#{v}')" })
+          super
         end
 
         def initialize_schema_migrations_table
-          sm_table = ActiveRecord::Migrator.schema_migrations_table_name
-
-          unless table_exists?(sm_table)
-            index_name = "#{Base.table_name_prefix}unique_schema_migrations#{Base.table_name_suffix}"
-            if index_name.length > index_name_length
-              truncate_to    = index_name_length - index_name.to_s.length - 1
-              truncated_name = "unique_schema_migrations"[0..truncate_to]
-              index_name     = "#{Base.table_name_prefix}#{truncated_name}#{Base.table_name_suffix}"
-            end
-
-            create_table(sm_table, :id => false) do |schema_migrations_table|
-              schema_migrations_table.column :version, :string, :null => false
-            end
-            add_index sm_table, :version, :unique => true, :name => index_name
-
-            # Backwards-compatibility: if we find schema_info, assume we've
-            # migrated up to that point:
-            si_table = Base.table_name_prefix + 'schema_info' + Base.table_name_suffix
-            if table_exists?(si_table)
-              ActiveSupport::Deprecation.warn "Usage of the schema table `#{si_table}` is deprecated. Please switch to using `schema_migrations` table"
-
-              old_version = select_value("SELECT version FROM #{quote_table_name(si_table)}").to_i
-              assume_migrated_upto_version(old_version)
-              drop_table(si_table)
-            end
-          end
+          super
         end
 
         def update_table_definition(table_name, base) #:nodoc:
@@ -170,7 +136,7 @@ module ActiveRecord
           self.all_schema_indexes = nil
         end
 
-        def add_index_options(table_name, column_name, options = {}) #:nodoc:
+        def add_index_options(table_name, column_name, comment: nil, **options) #:nodoc:
           column_names = Array(column_name)
           index_name   = index_name(table_name, column: column_names)
 
@@ -197,7 +163,7 @@ module ActiveRecord
         # Remove the given index from the table.
         # Gives warning if index does not exist
         def remove_index(table_name, options = {}) #:nodoc:
-          index_name = index_name(table_name, options)
+          index_name = index_name_for_remove(table_name, options)
           unless index_name_exists?(table_name, index_name, true)
             # sometimes options can be String or Array with column names
             options = {} unless options.is_a?(Hash)
@@ -209,11 +175,6 @@ module ActiveRecord
             end
             raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' does not exist"
           end
-          remove_index!(table_name, index_name)
-        end
-
-        # clear cached indexes when removing index
-        def remove_index!(table_name, index_name) #:nodoc:
           #TODO: It should execute only when index_type == "UNIQUE"
           execute "ALTER TABLE #{quote_table_name(table_name)} DROP CONSTRAINT #{quote_column_name(index_name)}" rescue nil
           execute "DROP INDEX #{quote_column_name(index_name)}"
@@ -289,6 +250,7 @@ module ActiveRecord
           execute(add_column_sql)
 
           create_sequence_and_trigger(table_name, options) if type && type.to_sym == :primary_key
+          change_column_comment(table_name, column_name, options[:comment]) if options.key?(:comment)
         ensure
           clear_table_columns_cache(table_name)
         end
@@ -297,7 +259,8 @@ module ActiveRecord
           fallback
         end
 
-        def change_column_default(table_name, column_name, default) #:nodoc:
+        def change_column_default(table_name, column_name, default_or_changes) #:nodoc:
+          default = extract_new_default_value(default_or_changes)
           execute "ALTER TABLE #{quote_table_name(table_name)} MODIFY #{quote_column_name(column_name)} DEFAULT #{quote(default)}"
         ensure
           clear_table_columns_cache(table_name)
@@ -351,14 +314,14 @@ module ActiveRecord
           self.all_schema_indexes = nil
         end
 
-        def add_comment(table_name, column_name, comment) #:nodoc:
-          return if comment.blank?
-          execute "COMMENT ON COLUMN #{quote_table_name(table_name)}.#{column_name} IS '#{comment}'"
+        def change_table_comment(table_name, comment)
+          clear_cache!
+          execute "COMMENT ON TABLE #{quote_table_name(table_name)} IS #{quote(comment)}"
         end
 
-        def add_table_comment(table_name, comment) #:nodoc:
-          return if comment.blank?
-          execute "COMMENT ON TABLE #{quote_table_name(table_name)} IS '#{comment}'"
+        def change_column_comment(table_name, column_name, comment) #:nodoc:
+          clear_cache!
+          execute "COMMENT ON COLUMN #{quote_table_name(table_name)}.#{quote_column_name(column_name)} IS '#{comment}'"
         end
 
         def table_comment(table_name) #:nodoc:
@@ -371,6 +334,7 @@ module ActiveRecord
         end
 
         def column_comment(table_name, column_name) #:nodoc:
+          # TODO: it  does not exist in Abstract adapter
           (owner, table_name, db_link) = @connection.describe(table_name)
           select_value <<-SQL
             SELECT comments FROM all_col_comments#{db_link}
@@ -391,8 +355,9 @@ module ActiveRecord
         def tablespace(table_name)
           select_value <<-SQL
             SELECT tablespace_name
-            FROM user_tables
+            FROM all_tables
             WHERE table_name='#{table_name.to_s.upcase}'
+            AND owner = SYS_CONTEXT('userenv', 'session_user')
           SQL
         end
 
@@ -423,8 +388,8 @@ module ActiveRecord
                   ,cc.column_name
                   ,c.constraint_name name
                   ,c.delete_rule
-              FROM user_constraints#{db_link} c, user_cons_columns#{db_link} cc,
-                   user_constraints#{db_link} r, user_cons_columns#{db_link} rc
+              FROM all_constraints#{db_link} c, all_cons_columns#{db_link} cc,
+                   all_constraints#{db_link} r, all_cons_columns#{db_link} rc
              WHERE c.owner = '#{owner}'
                AND c.table_name = '#{desc_table_name}'
                AND c.constraint_type = 'R'
@@ -461,19 +426,20 @@ module ActiveRecord
         def disable_referential_integrity(&block) #:nodoc:
           sql_constraints = <<-SQL
           SELECT constraint_name, owner, table_name
-            FROM user_constraints
+            FROM all_constraints
             WHERE constraint_type = 'R'
             AND status = 'ENABLED'
+            AND owner = SYS_CONTEXT('userenv', 'session_user')
           SQL
           old_constraints = select_all(sql_constraints)
           begin
             old_constraints.each do |constraint|
-              execute "ALTER TABLE #{constraint["table_name"]} DISABLE CONSTRAINT #{constraint["constraint_name"]}"
+              execute "ALTER TABLE #{quote_table_name(constraint["table_name"])} DISABLE CONSTRAINT #{quote_table_name(constraint["constraint_name"])}"
             end
             yield
           ensure
             old_constraints.each do |constraint|
-              execute "ALTER TABLE #{constraint["table_name"]} ENABLE CONSTRAINT #{constraint["constraint_name"]}"
+              execute "ALTER TABLE #{quote_table_name(constraint["table_name"])} ENABLE CONSTRAINT #{quote_table_name(constraint["constraint_name"])}"
             end
           end
         end

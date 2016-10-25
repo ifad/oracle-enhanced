@@ -1,25 +1,22 @@
 source 'http://rubygems.org'
 
 group :development do
-  gem 'jeweler', '~> 2.0'
-  gem 'rspec', '~> 2.4'
-  gem 'rdoc'
+  gem 'rspec', '~> 3.3'
+  gem 'rdoc', '~> 5.0.0.beta2'
+  gem 'rake'
 
-  git 'https://github.com/rails/rails', branch: '4-2-stable' do
-    gem 'activerecord'
-    gem 'activemodel'
-    gem 'activesupport'
-    gem 'actionpack'
-    gem 'railties'
-  end
+  gem 'activerecord',   github: 'rails/rails', branch: '5-0-stable'
+  gem 'rack',           github: 'rack/rack', branch: 'master'
+  gem 'arel',           github: 'rails/arel', branch: '7-1-stable'
 
-  gem 'arel',           github: 'rails/arel', branch: '6-0-stable'
-  gem 'journey',        github: 'rails/journey'
-
-  gem 'activerecord-deprecated_finders'
   gem 'ruby-plsql', '>=0.5.0'
 
   platforms :ruby do
     gem 'ruby-oci8',    github: 'kubo/ruby-oci8'
+    gem 'byebug'
+  end
+
+  platforms :jruby do
+    gem 'ruby-debug'
   end
 end

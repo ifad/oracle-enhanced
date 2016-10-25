@@ -25,7 +25,7 @@ describe "OracleEnhancedAdapter schema definition" do
     it 'creates a sequence when adding a column with create_sequence = true' do
       _, sequence_name = ActiveRecord::Base.connection.pk_and_sequence_for_without_cache(:keyboards)
 
-      sequence_name.should == Keyboard.sequence_name
+      expect(sequence_name).to eq(Keyboard.sequence_name)
     end
   end
 
@@ -60,11 +60,11 @@ describe "OracleEnhancedAdapter schema definition" do
     end
 
     it "should create sequence for non-default primary key" do
-      ActiveRecord::Base.connection.next_sequence_value(Keyboard.sequence_name).should_not be_nil
+      expect(ActiveRecord::Base.connection.next_sequence_value(Keyboard.sequence_name)).not_to be_nil
     end
 
     it "should create sequence for default primary key" do
-      ActiveRecord::Base.connection.next_sequence_value(IdKeyboard.sequence_name).should_not be_nil
+      expect(ActiveRecord::Base.connection.next_sequence_value(IdKeyboard.sequence_name)).not_to be_nil
     end
   end
 
@@ -72,8 +72,8 @@ describe "OracleEnhancedAdapter schema definition" do
 
     it "should return sequence name without truncating too much" do
       seq_name_length = ActiveRecord::Base.connection.sequence_name_length
-      tname = "#{DATABASE_USER}" + "." +"a"*(seq_name_length - DATABASE_USER.length) + "z"*(DATABASE_USER).length
-      ActiveRecord::Base.connection.default_sequence_name(tname).should match (/z_seq$/)
+      tname = "#{DATABASE_USER}" + "." + "a"*(seq_name_length - DATABASE_USER.length) + "z"*(DATABASE_USER).length
+      expect(ActiveRecord::Base.connection.default_sequence_name(tname)).to match (/z_seq$/)
     end
   end
 
@@ -114,13 +114,13 @@ describe "OracleEnhancedAdapter schema definition" do
     end
 
     it "should use default sequence start value 10000" do
-      ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.default_sequence_start_value.should == 10000
+      expect(ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.default_sequence_start_value).to eq(10000)
 
       create_test_employees_table
       class ::TestEmployee < ActiveRecord::Base; end
 
       employee = TestEmployee.create!
-      employee.id.should == 10000
+      expect(employee.id).to eq(10000)
     end
 
     it "should use specified default sequence start value" do
@@ -130,7 +130,7 @@ describe "OracleEnhancedAdapter schema definition" do
       class ::TestEmployee < ActiveRecord::Base; end
 
       employee = TestEmployee.create!
-      employee.id.should == 1
+      expect(employee.id).to eq(1)
     end
 
     it "should use sequence start value from table definition" do
@@ -138,7 +138,7 @@ describe "OracleEnhancedAdapter schema definition" do
       class ::TestEmployee < ActiveRecord::Base; end
 
       employee = TestEmployee.create!
-      employee.id.should == 10
+      expect(employee.id).to eq(10)
     end
 
     it "should use sequence start value and other options from table definition" do
@@ -146,9 +146,9 @@ describe "OracleEnhancedAdapter schema definition" do
       class ::TestEmployee < ActiveRecord::Base; end
 
       employee = TestEmployee.create!
-      employee.id.should == 100
+      expect(employee.id).to eq(100)
       employee = TestEmployee.create!
-      employee.id.should == 110
+      expect(employee.id).to eq(110)
     end
 
   end
@@ -198,26 +198,26 @@ describe "OracleEnhancedAdapter schema definition" do
       end
 
       it "should populate primary key using trigger" do
-        lambda do
+        expect do
           @conn.execute "INSERT INTO test_employees (first_name) VALUES ('Raimonds')"
-        end.should_not raise_error
+        end.not_to raise_error
       end
 
       it "should return new key value using connection insert method" do
         insert_id = @conn.insert("INSERT INTO test_employees (first_name) VALUES ('Raimonds')", nil, "id")
-        @conn.select_value("SELECT test_employees_seq.currval FROM dual").should == insert_id
+        expect(@conn.select_value("SELECT test_employees_seq.currval FROM dual")).to eq(insert_id)
       end
 
       it "should create new record for model" do
         e = TestEmployee.create!(:first_name => 'Raimonds')
-        @conn.select_value("SELECT test_employees_seq.currval FROM dual").should == e.id
+        expect(@conn.select_value("SELECT test_employees_seq.currval FROM dual")).to eq(e.id)
       end
 
       it "should not generate NoMethodError for :returning_id:Symbol" do
         set_logger
         @conn.reconnect! unless @conn.active?
         insert_id = @conn.insert("INSERT INTO test_employees (first_name) VALUES ('Yasuo')", nil, "id")
-        @logger.output(:error).should_not match(/^Could not log "sql.active_record" event. NoMethodError: undefined method `name' for :returning_id:Symbol/)
+        expect(@logger.output(:error)).not_to match(/^Could not log "sql.active_record" event. NoMethodError: undefined method `name' for :returning_id:Symbol/)
         clear_logger
       end
 
@@ -237,19 +237,19 @@ describe "OracleEnhancedAdapter schema definition" do
       end
 
       it "should populate primary key using trigger" do
-        lambda do
+        expect do
           @conn.execute "INSERT INTO test_employees (first_name) VALUES ('Raimonds')"
-        end.should_not raise_error
+        end.not_to raise_error
       end
 
       it "should return new key value using connection insert method" do
         insert_id = @conn.insert("INSERT INTO test_employees (first_name) VALUES ('Raimonds')", nil, "id")
-        @conn.select_value("SELECT test_employees_seq.currval FROM dual").should == insert_id
+        expect(@conn.select_value("SELECT test_employees_seq.currval FROM dual")).to eq(insert_id)
       end
 
       it "should create new record for model" do
         e = TestEmployee.create!(:first_name => 'Raimonds')
-        @conn.select_value("SELECT test_employees_seq.currval FROM dual").should == e.id
+        expect(@conn.select_value("SELECT test_employees_seq.currval FROM dual")).to eq(e.id)
       end
     end
 
@@ -270,19 +270,19 @@ describe "OracleEnhancedAdapter schema definition" do
       end
 
       it "should populate primary key using trigger" do
-        lambda do
+        expect do
           @conn.execute "INSERT INTO test_employees (first_name) VALUES ('Raimonds')"
-        end.should_not raise_error
+        end.not_to raise_error
       end
 
       it "should return new key value using connection insert method" do
         insert_id = @conn.insert("INSERT INTO test_employees (first_name) VALUES ('Raimonds')", nil, @primary_key)
-        @conn.select_value("SELECT #{@sequence_name}.currval FROM dual").should == insert_id
+        expect(@conn.select_value("SELECT #{@sequence_name}.currval FROM dual")).to eq(insert_id)
       end
 
       it "should create new record for model with autogenerated sequence option" do
         e = TestEmployee.create!(:first_name => 'Raimonds')
-        @conn.select_value("SELECT #{@sequence_name}.currval FROM dual").should == e.id
+        expect(@conn.select_value("SELECT #{@sequence_name}.currval FROM dual")).to eq(e.id)
       end
     end
 
@@ -302,19 +302,19 @@ describe "OracleEnhancedAdapter schema definition" do
       end
 
       it "should populate primary key using trigger" do
-        lambda do
+        expect do
           @conn.execute "INSERT INTO test_employees (first_name) VALUES ('Raimonds')"
-        end.should_not raise_error
+        end.not_to raise_error
       end
 
       it "should return new key value using connection insert method" do
         insert_id = @conn.insert("INSERT INTO test_employees (first_name) VALUES ('Raimonds')", nil, "id")
-        @conn.select_value("SELECT #{@sequence_name}.currval FROM dual").should == insert_id
+        expect(@conn.select_value("SELECT #{@sequence_name}.currval FROM dual")).to eq(insert_id)
       end
 
       it "should create new record for model with autogenerated sequence option" do
         e = TestEmployee.create!(:first_name => 'Raimonds')
-        @conn.select_value("SELECT #{@sequence_name}.currval FROM dual").should == e.id
+        expect(@conn.select_value("SELECT #{@sequence_name}.currval FROM dual")).to eq(e.id)
       end
     end
 
@@ -349,8 +349,8 @@ describe "OracleEnhancedAdapter schema definition" do
       create_test_employees_table(table_comment)
       class ::TestEmployee < ActiveRecord::Base; end
 
-      @conn.table_comment("test_employees").should == table_comment
-      TestEmployee.table_comment.should == table_comment
+      expect(@conn.table_comment("test_employees")).to eq(table_comment)
+      expect(TestEmployee.table_comment).to eq(table_comment)
     end
 
     it "should create table with columns comment" do
@@ -359,11 +359,12 @@ describe "OracleEnhancedAdapter schema definition" do
       class ::TestEmployee < ActiveRecord::Base; end
 
       [:first_name, :last_name].each do |attr|
-        @conn.column_comment("test_employees", attr.to_s).should == column_comments[attr]
+        expect(@conn.column_comment("test_employees", attr.to_s)).to eq(column_comments[attr])
       end
-      [:first_name, :last_name].each do |attr|
-        TestEmployee.columns_hash[attr.to_s].comment.should == column_comments[attr]
-      end
+# may drop support this syntax
+#      [:first_name, :last_name].each do |attr|
+#        expect(TestEmployee.columns_hash[attr.to_s].comment).to eq(column_comments[attr])
+#      end
     end
 
     it "should create table with table and columns comment and custom table name prefix" do
@@ -373,14 +374,15 @@ describe "OracleEnhancedAdapter schema definition" do
       create_test_employees_table(table_comment, column_comments)
       class ::TestEmployee < ActiveRecord::Base; end
 
-      @conn.table_comment(TestEmployee.table_name).should == table_comment
-      TestEmployee.table_comment.should == table_comment
+      expect(@conn.table_comment(TestEmployee.table_name)).to eq(table_comment)
+      expect(TestEmployee.table_comment).to eq(table_comment)
       [:first_name, :last_name].each do |attr|
-        @conn.column_comment(TestEmployee.table_name, attr.to_s).should == column_comments[attr]
+        expect(@conn.column_comment(TestEmployee.table_name, attr.to_s)).to eq(column_comments[attr])
       end
-      [:first_name, :last_name].each do |attr|
-        TestEmployee.columns_hash[attr.to_s].comment.should == column_comments[attr]
-      end
+# may drop support this syntax
+#      [:first_name, :last_name].each do |attr|
+#        expect(TestEmployee.columns_hash[attr.to_s].comment).to eq(column_comments[attr])
+#      end
     end
 
   end
@@ -391,9 +393,9 @@ describe "OracleEnhancedAdapter schema definition" do
     end
 
     it "should drop table with :if_exists option no raise error" do
-      lambda do
+      expect do
         @conn.drop_table("nonexistent_table", if_exists: true)
-      end.should_not raise_error
+      end.not_to raise_error
     end
   end
 
@@ -428,27 +430,27 @@ describe "OracleEnhancedAdapter schema definition" do
     end
 
     it "should rename table name with new one" do
-      lambda do
+      expect do
         @conn.rename_table("test_employees","new_test_employees")
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
     it "should raise error when new table name length is too long" do
-      lambda do
+      expect do
         @conn.rename_table("test_employees","a"*31)
-      end.should raise_error
+      end.to raise_error(ArgumentError)
     end
 
     it "should not raise error when new sequence name length is too long" do
-      lambda do
+      expect do
         @conn.rename_table("test_employees","a"*27)
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
     it "should rename table when table has no primary key and sequence" do
-      lambda do
+      expect do
         @conn.rename_table("test_employees_no_pkey","new_test_employees_no_pkey")
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
   end
@@ -475,7 +477,7 @@ describe "OracleEnhancedAdapter schema definition" do
     end
 
     it "should create table trigger with :new reference" do
-      lambda do
+      expect do
         @conn.execute <<-SQL
         CREATE OR REPLACE TRIGGER test_employees_pkt
         BEFORE INSERT ON test_employees FOR EACH ROW
@@ -487,7 +489,7 @@ describe "OracleEnhancedAdapter schema definition" do
           END IF;
         END;
         SQL
-      end.should_not raise_error
+      end.not_to raise_error
     end
   end
 
@@ -497,20 +499,21 @@ describe "OracleEnhancedAdapter schema definition" do
     end
 
     it "should return default index name if it is not larger than 30 characters" do
-      @conn.index_name("employees", :column => "first_name").should == "index_employees_on_first_name"
+      expect(@conn.index_name("employees", :column => "first_name")).to eq("index_employees_on_first_name")
     end
 
     it "should return shortened index name by removing 'index', 'on' and 'and' keywords" do
-      @conn.index_name("employees", :column => ["first_name", "email"]).should == "i_employees_first_name_email"
+      expect(@conn.index_name("employees", :column => ["first_name", "email"])).to eq("i_employees_first_name_email")
     end
 
     it "should return shortened index name by shortening table and column names" do
-      @conn.index_name("employees", :column => ["first_name", "last_name"]).should == "i_emp_fir_nam_las_nam"
+      expect(@conn.index_name("employees", :column => ["first_name", "last_name"])).to eq("i_emp_fir_nam_las_nam")
     end
 
     it "should raise error if too large index name cannot be shortened" do
-      @conn.index_name("test_employees", :column => ["first_name", "middle_name", "last_name"]).should ==
+      expect(@conn.index_name("test_employees", :column => ["first_name", "middle_name", "last_name"])).to eq(
         'i'+Digest::SHA1.hexdigest("index_test_employees_on_first_name_and_middle_name_and_last_name")[0,29]
+      )
     end
 
   end
@@ -537,27 +540,27 @@ describe "OracleEnhancedAdapter schema definition" do
     end
 
     it "should raise error when current index name and new index name are identical" do
-      lambda do
+      expect do
         @conn.rename_index("test_employees","i_test_employees_first_name","i_test_employees_first_name")
-      end.should raise_error
+      end.to raise_error(ActiveRecord::StatementInvalid)
     end
 
     it "should raise error when new index name length is too long" do
-      lambda do
+      expect do
         @conn.rename_index("test_employees","i_test_employees_first_name","a"*31)
-      end.should raise_error
+      end.to raise_error(ArgumentError)
     end
 
     it "should raise error when current index name does not exist" do
-      lambda do
+      expect do
         @conn.rename_index("test_employees","nonexist_index_name","new_index_name")
-      end.should raise_error
+      end.to raise_error(ArgumentError)
     end
 
     it "should rename index name with new one" do
-      lambda do
+      expect do
         @conn.rename_index("test_employees","i_test_employees_first_name","new_index_name")
-      end.should_not raise_error
+      end.not_to raise_error
     end
 end
 
@@ -569,23 +572,23 @@ end
     end
 
     it "should ignore :limit option for :text column" do
-      lambda do
+      expect do
         schema_define do
           create_table :test_posts, :force => true do |t|
             t.text :body, :limit => 10000
           end
         end
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
     it "should ignore :limit option for :binary column" do
-      lambda do
+      expect do
         schema_define do
           create_table :test_posts, :force => true do |t|
             t.binary :picture, :limit => 10000
           end
         end
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
   end
@@ -633,9 +636,9 @@ end
       schema_define do
         add_foreign_key :test_comments, :test_posts
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should raise_error() {|e| e.message.should =~ /ORA-02291.*\.#{fk_name}/i}
+      end.to raise_error() {|e| expect(e.message).to match(/ORA-02291.*\.#{fk_name}/i)}
     end
 
     context "with table_name_prefix" do
@@ -647,9 +650,9 @@ end
           add_foreign_key :test_comments, :test_posts
         end
 
-        lambda do
+        expect do
           TestComment.create(:body => "test", :test_post_id => 1)
-        end.should raise_error() {|e| e.message.should =~ /ORA-02291.*\.#{fk_name}/i}
+        end.to raise_error() {|e| expect(e.message).to match(/ORA-02291.*\.#{fk_name}/i)}
       end
     end
 
@@ -662,9 +665,9 @@ end
           add_foreign_key :test_comments, :test_posts
         end
 
-        lambda do
+        expect do
           TestComment.create(:body => "test", :test_post_id => 1)
-        end.should raise_error() {|e| e.message.should =~ /ORA-02291.*\.#{fk_name}/i}
+        end.to raise_error() {|e| expect(e.message).to match(/ORA-02291.*\.#{fk_name}/i)}
       end
     end
 
@@ -672,29 +675,31 @@ end
       schema_define do
         add_foreign_key :test_comments, :test_posts, :name => "comments_posts_fk"
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should raise_error() {|e| e.message.should =~ /ORA-02291.*\.COMMENTS_POSTS_FK/}
+      end.to raise_error() {|e| expect(e.message).to match(/ORA-02291.*\.COMMENTS_POSTS_FK/)}
     end
 
     it "should add foreign key with long name which is shortened" do
       schema_define do
         add_foreign_key :test_comments, :test_posts, :name => "test_comments_test_post_id_foreign_key"
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should raise_error() {|e| e.message.should =~
-        /ORA-02291.*\.C#{Digest::SHA1.hexdigest("test_comments_test_post_id_foreign_key")[0,29].upcase}/}
+      end.to raise_error() {|e| expect(e.message).to match(
+        /ORA-02291.*\.C#{Digest::SHA1.hexdigest("test_comments_test_post_id_foreign_key")[0,29].upcase}/
+      )}
     end
 
     it "should add foreign key with very long name which is shortened" do
       schema_define do
         add_foreign_key :test_comments, :test_posts, :name => "long_prefix_test_comments_test_post_id_foreign_key"
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should raise_error() {|e| e.message.should =~
-        /ORA-02291.*\.C#{Digest::SHA1.hexdigest("long_prefix_test_comments_test_post_id_foreign_key")[0,29].upcase}/}
+      end.to raise_error() {|e| expect(e.message).to match(
+        /ORA-02291.*\.C#{Digest::SHA1.hexdigest("long_prefix_test_comments_test_post_id_foreign_key")[0,29].upcase}/
+      )}
     end
 
     it "should add foreign key with column" do
@@ -703,9 +708,9 @@ end
       schema_define do
         add_foreign_key :test_comments, :test_posts, :column => "post_id"
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :post_id => 1)
-      end.should raise_error() {|e| e.message.should =~ /ORA-02291.*\.#{fk_name}/i}
+      end.to raise_error() {|e| expect(e.message).to match(/ORA-02291.*\.#{fk_name}/i)}
     end
 
     it "should add foreign key with delete dependency" do
@@ -715,7 +720,7 @@ end
       p = TestPost.create(:title => "test")
       c = TestComment.create(:body => "test", :test_post => p)
       TestPost.delete(p.id)
-      TestComment.find_by_id(c.id).should be_nil
+      expect(TestComment.find_by_id(c.id)).to be_nil
     end
 
     it "should add foreign key with nullify dependency" do
@@ -725,52 +730,7 @@ end
       p = TestPost.create(:title => "test")
       c = TestComment.create(:body => "test", :test_post => p)
       TestPost.delete(p.id)
-      TestComment.find_by_id(c.id).test_post_id.should be_nil
-    end
-
-    it "should add a composite foreign key" do
-      pending "Composite foreign keys are not supported in this version"
-      schema_define do
-        add_column :test_posts, :baz_id, :integer
-        add_column :test_posts, :fooz_id, :integer
-
-        execute <<-SQL
-          ALTER TABLE TEST_POSTS
-          ADD CONSTRAINT UK_FOOZ_BAZ UNIQUE (BAZ_ID,FOOZ_ID)
-        SQL
-
-        add_column :test_comments, :baz_id, :integer
-        add_column :test_comments, :fooz_id, :integer
-
-        add_foreign_key :test_comments, :test_posts, :columns => ["baz_id", "fooz_id"]
-      end
-
-      lambda do
-        TestComment.create(:body => "test", :fooz_id => 1, :baz_id => 1)
-      end.should raise_error() {|e| e.message.should =~
-        /ORA-02291.*\.TES_COM_BAZ_ID_FOO_ID_FK/}
-    end
-
-    it "should add a composite foreign key with name" do
-      pending "Composite foreign keys are not supported in this version"
-      schema_define do
-        add_column :test_posts, :baz_id, :integer
-        add_column :test_posts, :fooz_id, :integer
-
-        execute <<-SQL
-          ALTER TABLE TEST_POSTS
-          ADD CONSTRAINT UK_FOOZ_BAZ UNIQUE (BAZ_ID,FOOZ_ID)
-        SQL
-
-        add_column :test_comments, :baz_id, :integer
-        add_column :test_comments, :fooz_id, :integer
-
-        add_foreign_key :test_comments, :test_posts, :columns => ["baz_id", "fooz_id"], :name => 'comments_posts_baz_fooz_fk'
-      end
-
-      lambda do
-        TestComment.create(:body => "test", :baz_id => 1, :fooz_id => 1)
-      end.should raise_error() {|e| e.message.should =~ /ORA-02291.*\.COMMENTS_POSTS_BAZ_FOOZ_FK/}
+      expect(TestComment.find_by_id(c.id).test_post_id).to be_nil
     end
 
     it "should remove foreign key by table name" do
@@ -778,9 +738,9 @@ end
         add_foreign_key :test_comments, :test_posts
         remove_foreign_key :test_comments, :test_posts
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
     it "should remove foreign key by constraint name" do
@@ -788,9 +748,9 @@ end
         add_foreign_key :test_comments, :test_posts, :name => "comments_posts_fk"
         remove_foreign_key :test_comments, :name => "comments_posts_fk"
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
     it "should remove foreign key by column name" do
@@ -798,9 +758,9 @@ end
         add_foreign_key :test_comments, :test_posts
         remove_foreign_key :test_comments, :column => "test_post_id"
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
   end
@@ -819,8 +779,8 @@ end
           t.binary :test_blob
         end
       end
-      TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'TEST_CLOB'").should == DATABASE_NON_DEFAULT_TABLESPACE
-      TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'TEST_BLOB'").should_not == DATABASE_NON_DEFAULT_TABLESPACE
+      expect(TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'TEST_CLOB'")).to eq(DATABASE_NON_DEFAULT_TABLESPACE)
+      expect(TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'TEST_BLOB'")).not_to eq(DATABASE_NON_DEFAULT_TABLESPACE)
     end
 
     it 'should use default tablespace for blobs' do
@@ -832,8 +792,8 @@ end
           t.binary :test_blob
         end
       end
-      TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'TEST_BLOB'").should == DATABASE_NON_DEFAULT_TABLESPACE
-      TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'TEST_CLOB'").should_not == DATABASE_NON_DEFAULT_TABLESPACE
+      expect(TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'TEST_BLOB'")).to eq(DATABASE_NON_DEFAULT_TABLESPACE)
+      expect(TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'TEST_CLOB'")).not_to eq(DATABASE_NON_DEFAULT_TABLESPACE)
     end
 
     after do
@@ -877,9 +837,9 @@ end
           t.foreign_key :test_posts
         end
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should raise_error() {|e| e.message.should =~ /ORA-02291/}
+      end.to raise_error() {|e| expect(e.message).to match(/ORA-02291/)}
     end
 
     it "should add foreign key in create_table references" do
@@ -889,9 +849,9 @@ end
           t.references :test_post, :foreign_key => true
         end
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should raise_error() {|e| e.message.should =~ /ORA-02291/}
+      end.to raise_error() {|e| expect(e.message).to match(/ORA-02291/)}
     end
 
     it "should add foreign key in change_table" do
@@ -904,9 +864,9 @@ end
           t.foreign_key :test_posts
         end
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should raise_error() {|e| e.message.should =~ /ORA-02291/}
+      end.to raise_error() {|e| expect(e.message).to match(/ORA-02291/)}
     end
 
     it "should add foreign key in change_table references" do
@@ -918,9 +878,9 @@ end
           t.references :test_post, :foreign_key => true
         end
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should raise_error() {|e| e.message.should =~ /ORA-02291/}
+      end.to raise_error() {|e| expect(e.message).to match(/ORA-02291/)}
     end
 
     it "should remove foreign key by table name" do
@@ -936,9 +896,9 @@ end
           t.remove_foreign_key :test_posts
         end
       end
-      lambda do
+      expect do
         TestComment.create(:body => "test", :test_post_id => 1)
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
   end
@@ -957,29 +917,35 @@ end
           t.string :body, :limit => 4000
           t.references :test_post, :foreign_key => true
         end
+        create_table "test_Mixed_Comments", :force => true do |t|
+          t.string :body, :limit => 4000
+          t.references :test_post, :foreign_key => true
+        end
       end
     end
 
     after(:each) do
       schema_define do
+        drop_table "test_Mixed_Comments" rescue nil
         drop_table :test_comments rescue nil
         drop_table :test_posts rescue nil
       end
     end
 
     it "should disable all foreign keys" do
-      lambda do
+      expect do
         @conn.execute "INSERT INTO test_comments (id, body, test_post_id) VALUES (1, 'test', 1)"
-      end.should raise_error
+      end.to raise_error(ActiveRecord::InvalidForeignKey)
       @conn.disable_referential_integrity do
-        lambda do
+        expect do
+          @conn.execute "INSERT INTO \"test_Mixed_Comments\" (id, body, test_post_id) VALUES (2, 'test', 2)"
           @conn.execute "INSERT INTO test_comments (id, body, test_post_id) VALUES (2, 'test', 2)"
           @conn.execute "INSERT INTO test_posts (id, title) VALUES (2, 'test')"
-        end.should_not raise_error
+        end.not_to raise_error
       end
-      lambda do
+      expect do
         @conn.execute "INSERT INTO test_comments (id, body, test_post_id) VALUES (3, 'test', 3)"
-      end.should raise_error
+      end.to raise_error(ActiveRecord::InvalidForeignKey)
     end
 
   end
@@ -1028,9 +994,9 @@ end
         add_synonym :synonym_to_posts, "#{schema_name}.test_posts", :force => true
         add_synonym :synonym_to_posts_seq, "#{schema_name}.test_posts_seq", :force => true
       end
-      lambda do
+      expect do
         TestPost.create(:title => "test")
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
     it "should create synonym to table over database link" do
@@ -1039,9 +1005,9 @@ end
         add_synonym :synonym_to_posts, "test_posts@#{db_link}", :force => true
         add_synonym :synonym_to_posts_seq, "test_posts_seq@#{db_link}", :force => true
       end
-      lambda do
+      expect do
         TestPost.create(:title => "test")
-      end.should_not raise_error
+      end.not_to raise_error
     end
 
   end
@@ -1069,7 +1035,7 @@ end
         end
       end
       class ::TestPost < ActiveRecord::Base; end
-      TestPost.columns_hash['title'].null.should be_false
+      expect(TestPost.columns_hash['title'].null).to be_falsey
     end
 
     after(:each) do
@@ -1083,7 +1049,7 @@ end
         change_column :test_posts, :title, :string, :null => true
       end
       TestPost.reset_column_information
-      TestPost.columns_hash['title'].null.should be_true
+      expect(TestPost.columns_hash['title'].null).to be_truthy
     end
 
     it "should add column" do
@@ -1091,7 +1057,7 @@ end
         add_column :test_posts, :body, :string
       end
       TestPost.reset_column_information
-      TestPost.columns_hash['body'].should_not be_nil
+      expect(TestPost.columns_hash['body']).not_to be_nil
     end
 
     it "should add lob column with non_default tablespace" do
@@ -1099,7 +1065,7 @@ end
       schema_define do
         add_column :test_posts, :body, :text
       end
-      TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'BODY'").should == DATABASE_NON_DEFAULT_TABLESPACE
+      expect(TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'BODY'")).to eq(DATABASE_NON_DEFAULT_TABLESPACE)
     end
 
     it "should add blob column with non_default tablespace" do
@@ -1107,7 +1073,7 @@ end
       schema_define do
         add_column :test_posts, :attachment, :binary
       end
-      TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'ATTACHMENT'").should == DATABASE_NON_DEFAULT_TABLESPACE
+      expect(TestPost.connection.select_value("SELECT tablespace_name FROM user_lobs WHERE table_name='TEST_POSTS' and column_name = 'ATTACHMENT'")).to eq(DATABASE_NON_DEFAULT_TABLESPACE)
     end
 
     it "should rename column" do
@@ -1115,8 +1081,8 @@ end
         rename_column :test_posts, :title, :subject
       end
       TestPost.reset_column_information
-      TestPost.columns_hash['subject'].should_not be_nil
-      TestPost.columns_hash['title'].should be_nil
+      expect(TestPost.columns_hash['subject']).not_to be_nil
+      expect(TestPost.columns_hash['title']).to be_nil
     end
 
     it "should remove column" do
@@ -1124,7 +1090,7 @@ end
         remove_column :test_posts, :title
       end
       TestPost.reset_column_information
-      TestPost.columns_hash['title'].should be_nil
+      expect(TestPost.columns_hash['title']).to be_nil
     end
 
     it "should remove column when using change_table" do
@@ -1134,7 +1100,7 @@ end
         end
       end
       TestPost.reset_column_information
-      TestPost.columns_hash['title'].should be_nil
+      expect(TestPost.columns_hash['title']).to be_nil
     end
 
     it "should remove multiple columns when using change_table" do
@@ -1144,8 +1110,8 @@ end
         end
       end
       TestPost.reset_column_information
-      TestPost.columns_hash['title'].should be_nil
-      TestPost.columns_hash['content'].should be_nil
+      expect(TestPost.columns_hash['title']).to be_nil
+      expect(TestPost.columns_hash['content']).to be_nil
     end
 
     it "should ignore type and options parameter and remove column" do
@@ -1153,13 +1119,13 @@ end
         remove_column :test_posts, :title, :string, {}
       end
       TestPost.reset_column_information
-      TestPost.columns_hash['title'].should be_nil
+      expect(TestPost.columns_hash['title']).to be_nil
     end
   end
 
   describe 'virtual columns in create_table' do
     before(:each) do
-      pending "Not supported in this database version" unless @oracle11g_or_higher
+      skip "Not supported in this database version" unless @oracle11g_or_higher
     end
 
     it 'should create virtual column with old syntax' do
@@ -1175,16 +1141,16 @@ end
 
       TestFraction.reset_column_information
       tf = TestFraction.columns.detect { |c| c.virtual? }
-      tf.should_not be nil
-      tf.name.should == "field2"
-      tf.virtual?.should be true
-      lambda do
+      expect(tf).not_to be nil
+      expect(tf.name).to eq("field2")
+      expect(tf.virtual?).to be true
+      expect do
         tf = TestFraction.new(:field1=>10)
-        tf.field2.should be nil # not whatever is in DATA_DEFAULT column
+        expect(tf.field2).to be nil # not whatever is in DATA_DEFAULT column
         tf.save!
         tf.reload
-      end.should_not raise_error
-      tf.field2.to_i.should == 11
+      end.not_to raise_error
+      expect(tf.field2.to_i).to eq(11)
 
       schema_define do
         drop_table :test_fractions
@@ -1192,20 +1158,20 @@ end
     end
 
     it 'should raise error if column expression is not provided' do
-      lambda {
+      expect {
         schema_define do
           create_table :test_fractions do |t|
             t.integer :field1
             t.virtual :field2
           end
         end
-      }.should raise_error
+      }.to raise_error
     end
   end
 
   describe 'virtual columns' do
     before(:each) do
-      pending "Not supported in this database version" unless @oracle11g_or_higher
+      skip "Not supported in this database version" unless @oracle11g_or_higher
       expr = "( numerator/NULLIF(denominator,0) )*100"
       schema_define do
         create_table :test_fractions, :force => true do |t|
@@ -1230,16 +1196,16 @@ end
 
     it 'should include virtual columns and not try to update them' do
       tf = TestFraction.columns.detect { |c| c.virtual? }
-      tf.should_not be nil
-      tf.name.should == "percent"
-      tf.virtual?.should be true
-      lambda do
+      expect(tf).not_to be nil
+      expect(tf.name).to eq("percent")
+      expect(tf.virtual?).to be true
+      expect do
         tf = TestFraction.new(:numerator=>20, :denominator=>100)
-        tf.percent.should be nil # not whatever is in DATA_DEFAULT column
+        expect(tf.percent).to be nil # not whatever is in DATA_DEFAULT column
         tf.save!
         tf.reload
-      end.should_not raise_error
-      tf.percent.to_i.should == 20
+      end.not_to raise_error
+      expect(tf.percent.to_i).to eq(20)
     end
 
     it 'should add virtual column' do
@@ -1248,15 +1214,15 @@ end
       end
       TestFraction.reset_column_information
       tf = TestFraction.columns.detect { |c| c.name == 'rem' }
-      tf.should_not be nil
-      tf.virtual?.should be true
-      lambda do
+      expect(tf).not_to be nil
+      expect(tf.virtual?).to be true
+      expect do
         tf = TestFraction.new(:numerator=>7, :denominator=>5)
-        tf.rem.should be nil
+        expect(tf.rem).to be nil
         tf.save!
         tf.reload
-      end.should_not raise_error
-      tf.rem.to_i.should == 2
+      end.not_to raise_error
+      expect(tf.rem.to_i).to eq(2)
     end
 
     it 'should add virtual column with explicit type' do
@@ -1265,17 +1231,17 @@ end
       end
       TestFraction.reset_column_information
       tf = TestFraction.columns.detect { |c| c.name == 'expression' }
-      tf.should_not be nil
-      tf.virtual?.should be true
-      tf.type.should be :string
-      tf.limit.should be 100
-      lambda do
+      expect(tf).not_to be nil
+      expect(tf.virtual?).to be true
+      expect(tf.type).to be :string
+      expect(tf.limit).to be 100
+      expect do
         tf = TestFraction.new(:numerator=>7, :denominator=>5)
-        tf.expression.should be nil
+        expect(tf.expression).to be nil
         tf.save!
         tf.reload
-      end.should_not raise_error
-      tf.expression.should == '7/5'
+      end.not_to raise_error
+      expect(tf.expression).to eq('7/5')
     end
 
     it 'should change virtual column definition' do
@@ -1285,18 +1251,18 @@ end
       end
       TestFraction.reset_column_information
       tf = TestFraction.columns.detect { |c| c.name == 'percent' }
-      tf.should_not be nil
-      tf.virtual?.should be true
-      tf.type.should be :decimal
-      tf.precision.should be 15
-      tf.scale.should be 2
-      lambda do
+      expect(tf).not_to be nil
+      expect(tf.virtual?).to be true
+      expect(tf.type).to be :decimal
+      expect(tf.precision).to be 15
+      expect(tf.scale).to be 2
+      expect do
         tf = TestFraction.new(:numerator=>11, :denominator=>17)
-        tf.percent.should be nil
+        expect(tf.percent).to be nil
         tf.save!
         tf.reload
-      end.should_not raise_error
-      tf.percent.should == '64.71'.to_d
+      end.not_to raise_error
+      expect(tf.percent).to eq('64.71'.to_d)
     end
 
     it 'should change virtual column type' do
@@ -1305,18 +1271,18 @@ end
       end
       TestFraction.reset_column_information
       tf = TestFraction.columns.detect { |c| c.name == 'percent' }
-      tf.should_not be nil
-      tf.virtual?.should be true
-      tf.type.should be :decimal
-      tf.precision.should be 12
-      tf.scale.should be 5
-      lambda do
+      expect(tf).not_to be nil
+      expect(tf.virtual?).to be true
+      expect(tf.type).to be :decimal
+      expect(tf.precision).to be 12
+      expect(tf.scale).to be 5
+      expect do
         tf = TestFraction.new(:numerator=>11, :denominator=>17)
-        tf.percent.should be nil
+        expect(tf.percent).to be nil
         tf.save!
         tf.reload
-      end.should_not raise_error
-      tf.percent.should == '64.70588'.to_d
+      end.not_to raise_error
+      expect(tf.percent).to eq('64.70588'.to_d)
     end
   end
 
@@ -1346,7 +1312,7 @@ end
           t.string :title, :null => false
         end
       end
-      @would_execute_sql.should =~ /CREATE +TABLE .* \(.*\) NOLOGGING/
+      expect(@would_execute_sql).to match(/CREATE +TABLE .* \(.*\) NOLOGGING/)
     end
 
     it "should support the :tablespace option to create_table" do
@@ -1355,7 +1321,7 @@ end
           t.string :title, :null => false
         end
       end
-      @would_execute_sql.should =~ /CREATE +TABLE .* \(.*\) TABLESPACE bogus/
+      expect(@would_execute_sql).to match(/CREATE +TABLE .* \(.*\) TABLESPACE bogus/)
     end
 
     describe "creating a table with a tablespace defaults set" do
@@ -1368,7 +1334,7 @@ end
         @conn.create_table :tablespace_tests do |t|
           t.string :foo
         end
-        @would_execute_sql.should =~ /CREATE +TABLE .* \(.*\) TABLESPACE #{DATABASE_NON_DEFAULT_TABLESPACE}/
+        expect(@would_execute_sql).to match(/CREATE +TABLE .* \(.*\) TABLESPACE #{DATABASE_NON_DEFAULT_TABLESPACE}/)
       end
     end
 
@@ -1381,7 +1347,7 @@ end
         @conn.create_table :tablespace_tests, :id=>false, :organization=>'INDEX INITRANS 4 COMPRESS 1', :tablespace=>'bogus' do |t|
           t.integer :id
         end
-        @would_execute_sql.should =~ /CREATE +TABLE .*\(.*\)\s+ORGANIZATION INDEX INITRANS 4 COMPRESS 1 TABLESPACE bogus/
+        expect(@would_execute_sql).to match(/CREATE +TABLE .*\(.*\)\s+ORGANIZATION INDEX INITRANS 4 COMPRESS 1 TABLESPACE bogus/)
       end
     end
 
@@ -1389,14 +1355,14 @@ end
       schema_define do
         add_index :keyboards, :name, :options=>'NOLOGGING'
       end
-      @would_execute_sql.should =~ /CREATE +INDEX .* ON .* \(.*\) NOLOGGING/
+      expect(@would_execute_sql).to match(/CREATE +INDEX .* ON .* \(.*\) NOLOGGING/)
     end
 
     it "should support the :tablespace option to add_index" do
       schema_define do
         add_index :keyboards, :name, :tablespace=>'bogus'
       end
-      @would_execute_sql.should =~ /CREATE +INDEX .* ON .* \(.*\) TABLESPACE bogus/
+      expect(@would_execute_sql).to match(/CREATE +INDEX .* ON .* \(.*\) TABLESPACE bogus/)
     end
 
     it "should use default_tablespaces in add_index" do
@@ -1405,74 +1371,15 @@ end
         add_index :keyboards, :name
       end
       ActiveRecord::ConnectionAdapters::OracleEnhancedAdapter.default_tablespaces.delete(:index)
-      @would_execute_sql.should =~ /CREATE +INDEX .* ON .* \(.*\) TABLESPACE #{DATABASE_NON_DEFAULT_TABLESPACE}/
+      expect(@would_execute_sql).to match(/CREATE +INDEX .* ON .* \(.*\) TABLESPACE #{DATABASE_NON_DEFAULT_TABLESPACE}/)
     end
 
     it "should create unique function index but not create unique constraints" do
       schema_define do
         add_index :keyboards, 'lower(name)', unique: true, name: :index_keyboards_on_lower_name
       end
-      @would_execute_sql.should_not =~ /ALTER +TABLE .* ADD CONSTRAINT .* UNIQUE \(.*\(.*\)\)/
+      expect(@would_execute_sql).not_to match(/ALTER +TABLE .* ADD CONSTRAINT .* UNIQUE \(.*\(.*\)\)/)
     end
 
-    describe "#initialize_schema_migrations_table" do
-      # In Rails 2.3 to 3.2.x the index name for the migrations
-      # table is hard-coded. We can modify the index name here
-      # so we can support prefixes/suffixes that would
-      # cause the index to be too long.
-      #
-      # Rails 4 can use this solution as well.
-      after(:each) do
-        ActiveRecord::Base.table_name_prefix = ''
-        ActiveRecord::Base.table_name_suffix = ''
-      end
-
-      def add_schema_migrations_index
-        schema_define do
-          initialize_schema_migrations_table
-        end
-      end
-
-      context "without prefix or suffix" do
-        it "should not truncate the index name" do
-          add_schema_migrations_index
-
-          @would_execute_sql.should include('CREATE UNIQUE INDEX "UNIQUE_SCHEMA_MIGRATIONS" ON "SCHEMA_MIGRATIONS" ("VERSION")')
-        end
-      end
-
-      context "with prefix" do
-        before { ActiveRecord::Base.table_name_prefix = 'toolong_' }
-
-        it "should truncate the 'unique_schema_migrations' portion of the index name to fit the prefix within the limit" do
-          add_schema_migrations_index
-
-          @would_execute_sql.should include('CREATE UNIQUE INDEX "TOOLONG_UNIQUE_SCHEMA_MIGRATIO" ON "TOOLONG_SCHEMA_MIGRATIONS" ("VERSION")')
-        end
-      end
-
-      context "with suffix" do
-        before { ActiveRecord::Base.table_name_suffix = '_toolong' }
-
-        it "should truncate the 'unique_schema_migrations' portion of the index name to fit the suffix within the limit" do
-          add_schema_migrations_index
-
-          @would_execute_sql.should include('CREATE UNIQUE INDEX "UNIQUE_SCHEMA_MIGRATIO_TOOLONG" ON "SCHEMA_MIGRATIONS_TOOLONG" ("VERSION")')
-        end
-      end
-
-      context "with prefix and suffix" do
-        before do
-          ActiveRecord::Base.table_name_prefix = 'begin_'
-          ActiveRecord::Base.table_name_suffix = '_end'
-        end
-
-        it "should truncate the 'unique_schema_migrations' portion of the index name to fit the suffix within the limit" do
-          add_schema_migrations_index
-
-          @would_execute_sql.should include('CREATE UNIQUE INDEX "BEGIN_UNIQUE_SCHEMA_MIGRAT_END" ON "BEGIN_SCHEMA_MIGRATIONS_END" ("VERSION")')
-        end
-      end
-    end
   end
 end

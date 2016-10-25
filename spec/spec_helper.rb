@@ -22,14 +22,10 @@ elsif RUBY_ENGINE == 'jruby'
   puts "==> Running specs with JRuby version #{JRUBY_VERSION}"
 end
 
-ENV['RAILS_GEM_VERSION'] ||= config["rails"]["gem_version"] || '4.0-master'
 NO_COMPOSITE_PRIMARY_KEYS = true
-
-puts "==> Selected Rails version #{ENV['RAILS_GEM_VERSION']}"
 
 require 'active_record'
 
-require 'action_dispatch'
 require 'active_support/core_ext/module/attribute_accessors'
 require 'active_support/core_ext/class/attribute_accessors'
 
@@ -125,6 +121,7 @@ DATABASE_HOST         = config["database"]["host"]         || ENV['DATABASE_HOST
 DATABASE_PORT         = config["database"]["port"]         || ENV['DATABASE_PORT']         || 1521
 DATABASE_USER         = config["database"]["user"]         || ENV['DATABASE_USER']         || 'oracle_enhanced'
 DATABASE_PASSWORD     = config["database"]["password"]     || ENV['DATABASE_PASSWORD']     || 'oracle_enhanced'
+DATABASE_SCHEMA       = config["database"]["schema"]       || ENV['DATABASE_SCHEMA']       || 'oracle_enhanced_schema'
 DATABASE_SYS_PASSWORD = config["database"]["sys_password"] || ENV['DATABASE_SYS_PASSWORD'] || 'admin'
 
 CONNECTION_PARAMS = {
@@ -134,6 +131,26 @@ CONNECTION_PARAMS = {
   :port => DATABASE_PORT,
   :username => DATABASE_USER,
   :password => DATABASE_PASSWORD
+}
+
+CONNECTION_WITH_SCHEMA_PARAMS = {
+  :adapter => "oracle_enhanced",
+  :database => DATABASE_NAME,
+  :host => DATABASE_HOST,
+  :port => DATABASE_PORT,
+  :username => DATABASE_USER,
+  :password => DATABASE_PASSWORD,
+  :schema => DATABASE_SCHEMA
+}
+
+CONNECTION_WITH_TIMEZONE_PARAMS = {
+  :adapter => "oracle_enhanced",
+  :database => DATABASE_NAME,
+  :host => DATABASE_HOST,
+  :port => DATABASE_PORT,
+  :username => DATABASE_USER,
+  :password => DATABASE_PASSWORD,
+  :time_zone => "Europe/Riga"
 }
 
 SYS_CONNECTION_PARAMS = {
@@ -155,15 +172,10 @@ SYSTEM_CONNECTION_PARAMS = {
   :password => DATABASE_SYS_PASSWORD
 }
 
-DATABASE_NON_DEFAULT_TABLESPACE = ENV['DATABASE_NON_DEFAULT_TABLESPACE'] || "SYSTEM"
+DATABASE_NON_DEFAULT_TABLESPACE = config["database"]["non_default_tablespace"] || ENV['DATABASE_NON_DEFAULT_TABLESPACE'] || "SYSTEM"
 
 # set default time zone in TZ environment variable
 # which will be used to set session time zone
 ENV['TZ'] ||= config["timezone"] || 'Europe/Riga'
 
 # ActiveRecord::Base.logger = Logger.new(STDOUT)
-
-# Set default_timezone :local explicitly 
-# because this default value has been changed to :utc atrails master branch 
-ActiveRecord::Base.default_timezone = :local
-

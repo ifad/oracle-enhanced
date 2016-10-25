@@ -1,3 +1,362 @@
+## 1.7.4 / 2016-10-14
+
+* Changes and bug fixes
+
+ * Bump Arel 7.1.4 or higher [#1010, #848, #946]
+ * NoMethodError: undefined method `write' for nil:NilClass for serialized column [#798, #1007]
+ * Quote table name in disable_referential_integrity [#1012, #1014]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438, rails/arel#450]
+ * Add UPGRADE section : Upgrade Rails 4.2 or older version to Rails 5 [#1011, #993]
+ * add docker to RUNNING_TEST.md [#1006]
+ * Add executable test cases using Minitest or RSpec [#1002]
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+    * Workaround: execute explain without bind or use CRuby
+ - CRuby and JRuby
+ * Rails 5 : custom methods for create record when exception is raised in after_create callback fails [#944]
+ * Rails 5 : specs need update to emulate_booleans_from_strings [#942]
+ * #998 causes regression for `TIMESTAMP WITH LOCAL TIME ZONE` [#1001]
+
+## 1.7.3 / 2016-10-03
+
+* Changes and bug fixes
+ * Respect `ActiveRecord::Base.default_timezone = :utc` rather than connection `time_zone` value [#755, #998]
+
+* Known issues
+ * No changes since 1.7.0.rc1
+
+## 1.7.2 / 2016-09-19
+
+* Changes and bug fixes
+ * Remove ruby-oci8 from runtime dependency [#992,#995]
+ * Update README to add `gem 'ruby-oci8'` explicitly for CRuby users [#992, #995]
+
+* Known issues
+ * No changes since 1.7.0.rc1
+
+## 1.7.1 / 2016-08-22
+
+* Changes and bug fixes
+ * Add `ActiveRecord::OracleEnhanced::Type::Boolean` [#985, #979]
+ * Address `create_table': undefined method `each_pair' for []:Array (NoMethodError) [#980]
+ * Deprecate `fallback_string_to_date`, `fallback_string_to_time` [#974]
+
+* Known issues
+ * No changes since 1.7.0.rc1
+
+## 1.7.0 / 2016-08-04
+
+* Changes and bug fixes
+ * No changes since 1.7.0.rc1
+
+* Known issues
+ * No changes since 1.7.0.rc1
+
+## 1.7.0.rc1 / 2016-08-02
+
+* Changes and bug fixes
+
+ * Support `emulate_booleans_from_strings` in Rails 5 [#953, #942]
+ * Deprecate `self.is_boolean_column?` [#949]
+ * Deprecate `self.is_date_column?` and `is_date_column?` [#950]
+ * Deprecate `set_type_for_columns`, `set_type_for_columns` and `clear_types_for_columns` [#951]
+ * Deprecate `self.is_integer_column?` [#952]
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+    * Workaround: execute explain without bind or use CRuby
+ - CRuby and JRuby
+ * Rails 5 : custom methods for create record when exception is raised in after_create callback fails [#944]
+ * Rails 5 : specs need update to emulate_booleans_from_strings [#942]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438]
+    * #848 reproduces when database version is 11gR2 or older, it does not reproduce with 12c
+    * One of the units test skipped when database version is 11gR2 or lower. [#946]
+
+## 1.7.0.beta7 / 2016-08-01
+
+* Changes and bug fixes
+
+ * Use OracleEnhanced::SchemaDumper#tables and #table
+   only if they have Oracle enhanced specific features [#947, #797]
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+ - CRuby and JRuby
+ * Rails 5 : custom methods for create record when exception is raised in after_create callback fails [#944]
+ * Rails 5 : emulate_booleans_from_strings support [#942]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438]
+    * #848 reproduces when database version is 11gR2 or older, it does not reproduce with 12c
+    * One of the units test skipped when database version is 11gR2 or lower. [#946]
+
+## 1.7.0.beta6 / 2016-07-29
+
+* Changes and bug fixes
+
+ * Use attributes.keys to update all attributes when partial_write is disabled [#906 #943]
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+ - CRuby and JRuby
+ * Rails 5 : custom methods for create record when exception is raised in after_create callback fails [#944]
+ * Rails 5 : emulate_booleans_from_strings support [#942]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438]
+    * #848 reproduces when database version is 11gR2 or older, it does not reproduce with 12c
+
+## 1.7.0.beta5 / 2016-07-28
+
+* Changes and bug fixes
+
+ * Use binds.size to set returning_id_index for returning_id [#907, #912 and #939]
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+ - CRuby and JRuby
+ * Rails 5 : custom methods for create, update and destroy not working [#906]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438]
+    * #848 reproduces when database version is 11gR2 or older, it does not reproduce with 12c
+
+## 1.7.0.beta4 / 2016-07-27
+
+* Changes and bug fixes
+
+ * Call `bind_returning_param` when sql has returning_id and using JRuby [#937]
+ * Remove unused `col_type` to avoid warnings [#934]
+ * Remove TODO comment since Oracle DATE type can be mapped Rails Datetime with attribute API [#935]
+ * Remove rspec from runtime dependency [#933]
+ * Rename `add_dependency` to `add_runtime_dependency` [#933]
+ * Remove warnings for + when tested with JRuby 9.1.2 [#936]
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : create table with primary key trigger with default primary key not returning id [#912]
+    * #937 addresses two failures reported in #912
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+ - CRuby and JRuby
+ * Rails 5 : create table with primary key trigger not returning id [#907]
+ * Rails 5 : custom methods for create, update and destroy not working [#906]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438]
+
+## 1.7.0.beta3 / 2016-07-22
+
+* Changes and bug fixes
+ * Not giving `bind_param` a 3rd argument `column` [#929, #909]
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : create table with primary key trigger with default primary key not returning id [#912]
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+ - CRuby and JRuby
+ * Rails 5 : create table with primary key trigger not returning id [#907]
+ * Rails 5 : custom methods for create, update and destroy not working [#906]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438]
+
+## 1.7.0.beta2 / 2016-07-22
+
+* Changes and bug fixes
+
+ * Support CLOB for JRuby [#926, #910, #911]
+ * Arel 7.1.0 or higher version is required [#919]
+ * Document usage of ActiveRecord Attributes API in 1.7 [#924]
+ * Add a note about usage pecularities of context_index's index_column option to README [#924]
+ * Set required_ruby_version = '>= 2.2.2' [#916]
+ * Remove ActiveRecord::ConnectionAdapters::TableDefinition#aliased_types [#921]
+ * Update warning message for composite primary keys [#923]
+ * Remove specs deprecated in Oracle enhanced adapter 1.7 [#917]
+ * Rails 5 : has_and_belongs_to_many test gets ORA-01400 since primary key column "ID"
+    not included in insert statement [#856, rails/rails#25388, rails/rails#25578 ]
+   - This fix will be included in the next version of Rails which should be named 5.0.1
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : create table with primary key trigger with default primary key not returning id [#912]
+ * Rails 5 : SQL with bind parameters when NLS_NUMERIC_CHARACTERS is set to ', '
+    show Java::JavaSql::SQLSyntaxErrorException: / ORA-01722: invalid number [#909]
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+ - CRuby and JRuby
+ * Rails 5 : create table with primary key trigger not returning id [#907]
+ * Rails 5 : custom methods for create, update and destroy not working [#906]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438]
+
+## 1.7.0.beta1 / 2016-07-18
+
+* Major enhancements
+
+ * Support Rails 5.0
+ * Use Arel::Visitors::Oracle12 to use better top-N query support [#671]
+ * Oracle TIMESTAMP sql type is associated with Rails `DateTime` type [#845]
+ * Rails :time as Oracle TIMESTAMP to support subsecond precision [#817, #816]
+ * Rails :datetime as Oracle TIMESTAMP to support subsecond precision [#739]
+ * Remove ActiveRecord::OracleEnhanced::Type::Timestamp [#815]
+ * Deprecate `quote_date_with_to_date` and `quote_timestamp_with_to_timestamp` [#879]
+ * Deprecate `set_boolean_columns` and `set_string_columns` [#874]
+ * Deprecate `set_integer_columns [#872]
+ * Deprecate `set_date_columns` and `set_datetime_columns` [#869]
+ * Deprecate `ignore_table_columns` to use Rails native `ignored_columns` [#855]
+ * Set :datetime for an attribute explicitly [#875, #876]
+ * Support `#views` #738
+ * Replace `table_exists?` with `data_source_exists?` [#842]
+ * Introduce `data_source_exists?` to return tables and views [#841]
+ * Implement primary_keys to prepare dumping composite primary key [#860]
+ * Support for any type primary key [#836]
+ * Dump composite primary keys [#863]
+ * Dump type and options for non default primary keys [#861]
+ * Support creating foreign keys in create table [#862]
+ * Support ActiveRecord native comment feature [#822, #821, #819]
+
+* Changes and bug fixes
+
+ * Fix cast_type issue [#795]
+ * Rename quote_value to quote_default_expression [#661]
+ * Change bind parameters order to come offset first then limit next [#831]
+ * type_cast arity change [#781]
+ * Initial support for sql_type_metadata [#656]
+ * Support bind_params for JDBC connections [#806]
+ * Use all_* dictionary replacing user_* ones [#713]
+ * Register `NUMBER(1)` sql_type to `Type::Boolean` [#844]
+ * Add `ActiveRecord::ValueTooLong` exception class [#827]
+ * Not passing `native_database_types` to `TableDefinition` [#747]
+ * Ignore index name in `index_exists?` when not passed a name to check for [#840]
+ * Add reversible syntax for change_column_default [#839]
+ * Support Oracle national character set NCHAR, NVARCHAR2 [#886]
+ * Support "limited" :returning_id [#894, #803]
+ * Support RAW sql data type in Rails 5 [#877]
+ * Remove `serialized_attributes` which is removed in Rails 5 [#694]
+ * Add deprecation warning for `bind_param` [#809]
+ * Remove `self.string_to_raw` from Column which is not called anymore [#813]
+ * Remove type_cast from Column [#811]
+ * Remove deprecated `distinct` method [#771]
+ * Remove alias_method_chain and rename oracle_enhanced_table to table [#864]
+ * Warn if `AR.primary_key` is called for a table with composite primary key [#837]
+ * Remove select method from Oracle enhanced adapter [#784]
+ * Remove version check to see if ::Rails::Railtie exists [#769]
+ * Remove FALSE_VALUES [#716]
+ * Remove TRUE_VALUES from OracleEnhancedColumn [#646]
+ * Remove insert_sql method [#866, #890]
+ * Rails5 remove require bind visitor [#853]
+ * substitute_at has been removed from Rails [#849]
+ * Serialize value for lob columns [#878]
+ * Do not cache prepared statements that are unlikely to have cache hits [#748]
+ * Handle BLOB type correctly [#804]
+ * Move ActiveRecord::Type to ActiveModel [#723]
+ * Remove cast_type to support Rails 5 Attribute API [#867]
+ * Handle ActiveModel::Type::Binary::Data type cast in _type_cast [#826]
+ * Use Abstract adapter `dump_schema_information` implementation [#857]
+ * Use ActiveRecord initialize_schema_migrations_table [#843]
+ * Use ActiveRecord::SchemaDumper#ignored? [#838]
+ * Use Abstract adapter join_to_update [#801, #800]
+ * Use ActiveRecord::OracleEnhanced::Type::Text [#887]
+ * Use ActiveRecord::OracleEnhanced::Type::String [#883]
+ * Use OracleEnhanced::ColumnDefinition [#650]
+ * Move to ActiveRecord::ConnectionAdapters::OracleEnhanced::SchemaDumper [#695]
+ * ColumnDumper uses Module#prepend [#696]
+ * Migrate from OracleEnhancedSchemaStatementExt to OracleEnhanced::SchemaStatementsExt [#768]
+ * Extract ActiveRecord::ConnectionAdapters::OracleEnhanced::Quoting [#764]
+ * Use keyword arguments for new table options [#820]
+ * Move `ruby_to_java_value` logic to `_type_cast` [#904]
+ * OracleEnhancedColumn.new needs sql_type_metadata including sql_type [#858]
+ * OracleEnhanced::JDBCQuoting and OCIQuoting [#897]
+ * Address `add_column_options!': undefined method `quote_value' [#647]
+ * Remove dirty tracking methods [#883]
+ * Use arel master branch for rails5 development [#645]
+ * Bump ruby-oci8 version to 2.2.0 or higher [#775] 
+ * Remove jeweler dependency [#766]
+ * Remove required_rubygems_version [#719]
+ * Remove journey which is already part of Rails [#701]
+ * Remove dependencies with non activerecord gems [#700]
+ * Remove activerecord-deprecated_finders [#698]
+ * Use rack master branch [#697]
+ * Clean up gemspec file and bump rspec, ruby-plsql and ruby-oci8 versions [#717]
+ * Remove magic comment for utf-8 [#772, #726]
+ * add_dependency with ruby-oci8 only if it runs cruby, not jruby [#902]
+ * Install ruby-debug for jruby [#899]
+ * Address dirty object tracking should not mark empty text as changed [#888]
+ * Revert "Update matcher to skip sql statements to get `table` metadata" [#881]
+ * No need to set @visitor instance variable here [#854]
+ * log binds should not be type_casted [#818]
+ * Fix schema dumper errors [#810]
+ * Address undefined method `cast_type' [#805]
+ * Better fix to support "Relation#count does not support finder options anymore in Rails [#788, #787]
+ * ActiveRecord::Calculations#count no longer accepts an options hash argument #754
+ * Supress WARNINGs using `raise_error` without specific errors [#724]
+ * Use RSpec 3 [#707]
+ * Update "OracleEnhancedAdapter boolean type detection based on string column types and names" [#873]
+ * Update "OracleEnhancedAdapter integer type detection based on column names" [#871]
+ * Update "OracleEnhancedAdapter date type detection based on column names" [#868]
+ * Do not set emulate_dates_by_column_name or emulate_dates in specs [#870]
+ * Update rake spec message to show default branch name as master [#648]
+ * Remove `ActiveRecord::Base.default_timezone = :local` from spec_helper [#901]
+ * Update to rspec3 syntax to avoid deprecation notices [#776]
+ * Remove RAILS_GEM_VERSION [#702]
+ * Run Oracle enhanced adapter unit tests using Travis CI [#789]
+ * Upgrade travis-oracle to Version 2.0.1 [#903]
+
+* Known issues
+
+ - Only with JRuby
+ * Rails 5 : create table with primary key trigger with default primary key not returning id [#912]
+ * Rails 5 : dirty object tracking not working correctly for CLOB [#911]
+ * Rails 5 : handling of CLOB columns get failures [#910]
+ * Rails 5 : SQL with bind parameters when NLS_NUMERIC_CHARACTERS is set to ', ' 
+    show Java::JavaSql::SQLSyntaxErrorException: / ORA-01722: invalid number [#909]
+ * Rails 5 : explain should explain query with binds got Java::JavaSql::SQLException: Invalid column index [#908]
+ - CRuby and JRuby
+ * Rails 5 : create table with primary key trigger not returning id [#907]
+ * Rails 5 : custom methods for create, update and destroy not working [#906]
+ * Rails 5 : has_and_belongs_to_many test gets ORA-01400 since primary key column "ID" 
+    not included in insert statement [#856, rails/rails#25388]
+ * Rails 5 : undefined method `to_i' for #<Arel::Nodes::BindParam:0x00000002c92910> [#848, rails/arel#438]
+
+## 1.6.7 / 2016-03-08
+
+* Changes and bug fixes since 1.6.6
+ * Support Rails 4.2.6
+ * Support t.foreign_key use the same `to_table` twice [#783]
+ * Remove "warning: (...) interpreted as grouped expression" [#765]
+ * Add documentation on setting read, write and connect timeouts [#761]
+
+## 1.6.6 / 2016-01-21
+
+* Changes and bug fixes since 1.6.5
+ * Address ORA-00904 when CONTAINS has `table_name.column_name` [#758, #664, #463]
+ * Only convert N to false when emulating booleans [#751]
+ * Clean up specs and test documentation [#756]
+ * Add JDBC Drivers to gitignore [#745]
+
+## 1.6.5 / 2015-12-01
+
+* Enhancement
+ * Support `schema` option to use schema objects owned by another schema[#742]
+
+## 1.6.4 / 2015-11-09
+
+* Changes and bug fixes since 1.6.3
+ * Add table and column comments to structure dump and schema dump [#734]
+ * Remove `serialized_attributes` which is removed in Rails 5 [#694]
+ * fixing bundler dependency conflict with head of rails vs arel 6.0[#714]
+ * Add note to readme about adapter name when using DATABASE_URL [#728]
+ * Fixed copy/paste error in README.md [#731]
+ * Pending a test using virtual columns features introduced in 11gR1 [#733]
+ * Suppress warning: ambiguous first argument [#690]
+ * Suppress `warning: assigned but unused variable` [#691]
+ * Suppress `warning: assigned but unused variable - tablespace` [#692]
+ * Suppress `warning: assigned but unused variable - e` [#693]
+ * Ignore .rbenv-gemsets [#705]
+ * Clean up database objects after unit tests executed [#712]
+
 ## 1.6.3 / 2015-08-14
 
 * Changes and bug fixes since 1.6.2
